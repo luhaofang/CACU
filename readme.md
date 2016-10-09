@@ -17,31 +17,30 @@ This is a deep learning framework for cnn which using xnor method to accelerate 
 	
 ## Layers support:
 
-	for this version
+for this version
 	
-	layer:
-		- average_pooling_layer
-		- batch_normalization_layer
-		- convolution_layer
-		- eltwise_layer
-		- inner_product_layer
-		- max_pooling_layer
-		- relu_layer
-		- sigmoid_layer
-		- softmax_with_loss_layer
+- layer:
+	- average_pooling_layer
+	- batch_normalization_layer
+	- convolution_layer
+	- eltwise_layer
+	- inner_product_layer
+	- max_pooling_layer
+	- relu_layer
+	- sigmoid_layer
+	- softmax_with_loss_layer
 		
-	bit layer:
-		- bin_activation_layer
-		- bit_convolution_layer
+- bit layer:
+	- bin_activation_layer
+	- bit_convolution_layer
 		
 ## Bit blob
 
-	We using dynamic_bitset which supplied by boost to binary the 32 bits parameters, Bin_blob is created for the binaried data flow in this framework.Each layer can be created on two kinds of 
-blobs,flexiable for more bit logical calculating.
+- We using dynamic_bitset which supplied by boost to binary the 32 bits parameters, Bin_blob is created for the binaried data flow in this framework.Each layer can be created on two kinds of blobs,flexiable for more bit logical calculating.
 
 ## Model design
-	
-	Build a cnn network like what you did in Caffe.You may easily create a CNN mode in CACU if you are a Caffe user. Block network design will support.
+
+- Build a cnn network like what you did in Caffe.You may easily create a CNN mode in CACU if you are a Caffe user. Block network design will support.
 	
 ## References
 [1] A Krizhevsky, I Sutskever, GE Hinton. [Imagenet classification with deep convolutional neural networks.](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf). 
