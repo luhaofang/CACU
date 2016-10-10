@@ -40,7 +40,7 @@ for this version
 
 ## Model design
 
-- Build a cnn network like what you did in Caffe.You may easily create a CNN mode in CACU if you are a Caffe user. Block network design will support.
+- Build a cnn network like what you did on Caffe.You may easily create a CNN mode in CACU if you are a Caffe user. Block network design will support.
 	
 ## References
 [1] A Krizhevsky, I Sutskever, GE Hinton. [Imagenet classification with deep convolutional neural networks.](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf). 
