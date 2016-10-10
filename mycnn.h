@@ -50,7 +50,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "layer/conv_layer.h"
 #include "layer/sigmoid_layer.h"
 #include "layer/accuracy_layer.h"
-#include "layer/activation_base_layer.h"
 
 #include "core/math.hpp"
 #include "core/matrix.hpp"
