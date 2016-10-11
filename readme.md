@@ -9,7 +9,7 @@ This is a deep learning framework for cnn which using xnor method to accelerate 
  - GPU mode supported for trainning large-scaled model. 
  - caffe level precision in 32bits.
 - nicely portable header only
- - only dependency needed just include boost(dynamic_bitset) if you need bit method.It's.
+ - only dependency needed just include boost(dynamic_bitset) if you need bit method.
  - just include mycnn.h and write your model in C++. There is nothing to install.
  - squeezed model size,theoretically,achieve a ~X32 reduction in model size.
 - cross platform supported
