@@ -39,10 +39,6 @@
 #include <time.h>
 #include <string>
 
-#if GPU_MODE
-#include <cuda_runtime.h>
-#define CHECK(res) if(res!=cudaSuccess){printf("[cuda error  %d]\n",res);exit(-1);}
-#endif
 
 #include "boost/dynamic_bitset.hpp"
 

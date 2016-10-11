@@ -3,14 +3,14 @@
 
 using namespace mycnn;
 
-network cifar_myquick_xnor(type phrase = train) {
+network* cifar_myquick_xnor(type phrase = train) {
 	//num,channel,dim
 	blob* input_data = new blob(BATCH_SIZE, 3, 32, phrase);
 	blob* labels = new blob(BATCH_SIZE, 1, 1);
 
 	bool use_global_stats = true;
 
-	network net;
+	static network net;
 	net.phrase = phrase;
 
 	conv_layer *cl1 = new conv_layer("cl1", 32,   //input_dim
@@ -161,5 +161,5 @@ network cifar_myquick_xnor(type phrase = train) {
 	printf("input data costs : %d\n", BATCH_SIZE * 3 * 224 * 224);
 	printf("space costs : %d mb\n",
 			(net.caculate_data_space()) * sizeof(float) / 1024 / 1024);
-	return net;
+	return &net;
 }

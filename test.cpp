@@ -13,16 +13,8 @@ using namespace boost;
 
 void train_test() {
 
-	//test_layers();
-	//network net = test_net();
-	//network net = vgg11();
-	//network net = resnet18();
-	//network net = cifar_10_bn();
-	//network net = cifar_10_bn_bin();
-	//network net = cifar_quick(train);
-	//network net = cifar_myquick();
-	network net = cifar_myquick_xnor();
-	//net.load("E:/mywork/experiment/test_myquick_bin.model");
+	network *net = cifar_myquick_xnor();
+	//net->load("E:/mywork/experiment/test_myquick_bin.model");
 
 	vector<vec_t> input_data;
 	vector<vec_t> labels;
@@ -52,20 +44,20 @@ void train_test() {
 		//vec_t image_data;
 		if (i % TEST_ITER == 0) {
 			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_data,
-					net.net_[net.layers[0]]->bottoms[0]->s_data);
+					net->net_[net->layers[0]]->bottoms[0]->s_data);
 
 			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_labels,
-					net.net_["softmax"]->bottoms[1]->s_data);
+					net->net_["softmax"]->bottoms[1]->s_data);
 
-			net.predict();
+			net->predict();
 
 		} else {
 
 			getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, input_data,
-					net.net_[net.layers[0]]->bottoms[0]->s_data);
+					net->net_[net->layers[0]]->bottoms[0]->s_data);
 
 			getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, labels,
-					net.net_["softmax"]->bottoms[1]->s_data);
+					net->net_["softmax"]->bottoms[1]->s_data);
 
 			s.train(i);
 		}
@@ -74,7 +66,7 @@ void train_test() {
 			ostringstream oss;
 			oss << "/home/seal/dataset/experiment/test_myquick_bin_" << i
 					<< ".model";
-			net.save(oss.str().c_str());
+			net->save(oss.str().c_str());
 		}
 	}
 
@@ -84,17 +76,11 @@ void train_test() {
 
 void train_test()
 {
-	//test_layers();
-	//network net = test_net();
-	//network net = vgg11();
-	//network net = resnet18();
-	//network net = cifar_10_bn();
-	//network net = cifar_10_bn_bin();
-	network net = cifar_quick(train);
-	//network net = cifar_myquick();
-	//network net = cifar_myquick_xnor();
 
-//	net.load("E:/mywork/experiment/test_myquick_bin.model");
+	//network *net = cifar_quick();
+	network *net = cifar_myquick_xnor();
+
+//	net->load("E:/mywork/experiment/test_myquick_bin.model");
 
 	blob *input_data = new blob();
 	blob *labels = new blob();
@@ -124,18 +110,18 @@ void train_test()
 		//vec_t image_data;
 		if (i%TEST_ITER == 0)
 		{
-			getdata(BATCH_SIZE, (i / TEST_ITER)*BATCH_SIZE, test_data->data, net.net_[net.layers[0]]->bottoms[0]->data);
+			getdata(BATCH_SIZE, (i / TEST_ITER)*BATCH_SIZE, test_data->data, net->net_[net->layers[0]]->bottoms[0]->data);
 
-			getdata(BATCH_SIZE, (i / TEST_ITER)*BATCH_SIZE, test_labels->data, net.net_["softmax"]->bottoms[1]->data);
+			getdata(BATCH_SIZE, (i / TEST_ITER)*BATCH_SIZE, test_labels->data, net->net_["softmax"]->bottoms[1]->data);
 
-			net.predict();
+			net->predict();
 		}
 
 		else {
 
-			getdata(BATCH_SIZE, (i - 1)*BATCH_SIZE, input_data->data, net.net_[net.layers[0]]->bottoms[0]->data);
+			getdata(BATCH_SIZE, (i - 1)*BATCH_SIZE, input_data->data, net->net_[net->layers[0]]->bottoms[0]->data);
 
-			getdata(BATCH_SIZE, (i - 1)*BATCH_SIZE, labels->data, net.net_["softmax"]->bottoms[1]->data);
+			getdata(BATCH_SIZE, (i - 1)*BATCH_SIZE, labels->data, net->net_["softmax"]->bottoms[1]->data);
 
 			s.train(i);
 		}
@@ -143,7 +129,7 @@ void train_test()
 		if (i%SNAPSHOT == 0) {
 			ostringstream oss;
 			oss << "/home/seal/dataset/experiment/test_myquick_bin_" << i << ".model";
-			net.save(oss.str().c_str());
+			net->save(oss.str().c_str());
 		}
 	}
 
@@ -151,40 +137,22 @@ void train_test()
 	delete labels;
 	delete test_data;
 	delete test_labels;
+	delete net;
 }
 
 void test_data()
 {
 	//network net = resnet18();
-	network net = cifar_quick(test);
+	network *net = cifar_quick(test);
 	//network net = cifar_myquick_xnor(test);
 
-	net.load("./example/cifar_10_quick/test_myquick_5000.model");
+	net->load("E:/mywork/experiment/test_myquick_5000.model");
 
 	blob *input_data = new blob();
 	blob *labels = new blob();
 	blob *test_data = new blob();
 	blob *test_labels = new blob();
 
-	/*vector<string> data_name;
-	 vec_t data_label;
-
-	 std::ifstream fin("E:/mywork/data/list.txt", std::ios::in);
-	 char line[1024] = { 0 };
-	 string filename = "";
-	 string label = "";
-	 while (fin.getline(line, sizeof(line)))
-	 {
-	 std::stringstream word(line);
-	 word >> filename;
-	 word >> label;
-	 data_name.push_back(filename);
-	 data_label.push_back(atof(label.c_str()));
-	 }*/
-
-	//printf("\n%d", data_name.size());	
-	//sgd s(net);
-	//s.caculate_sgd_data_space();
 	string cifar_location = "E:/mywork/data/cifar-10-batches-bin/";
 
 	vec_t mean = calculate_mean_dim(cifar_location,5);
@@ -199,11 +167,11 @@ void test_data()
 
 	for (unsigned int i = 0; i < 10000 / BATCH_SIZE; i++) {
 
-		getdata(BATCH_SIZE, i *BATCH_SIZE, test_data->data, net.net_[net.layers[0]]->bottoms[0]->data);
+		getdata(BATCH_SIZE, i *BATCH_SIZE, test_data->data, net->net_[net->layers[0]]->bottoms[0]->data);
 
-		getdata(BATCH_SIZE, i *BATCH_SIZE, test_labels->data, net.net_["softmax"]->bottoms[1]->data);
+		getdata(BATCH_SIZE, i *BATCH_SIZE, test_labels->data, net->net_["softmax"]->bottoms[1]->data);
 
-		result = net.predict();
+		result = net->predict();
 
 		for (unsigned int num = 0; num < result->data.size(); num++)
 		{
@@ -215,7 +183,7 @@ void test_data()
 					index = mycnn::float_t(i);
 				}
 			}
-			if (index == net.net_["softmax"]->bottoms[1]->data[num][0])
+			if (index == net->net_["softmax"]->bottoms[1]->data[num][0])
 			count += 1.0;
 		}
 
@@ -230,6 +198,7 @@ void test_data()
 	delete labels;
 	delete test_data;
 	delete test_labels;
+	delete net;
 }
 
 
@@ -239,10 +208,7 @@ int main() {
 
 	//testim2col();
 	//calculate_mean_channel();
-	//train_test();
+	train_test();
 
-	test_data();
-
-	int x;
-	cin >>x;
+	//test_data();
 }

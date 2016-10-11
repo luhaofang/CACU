@@ -6,14 +6,14 @@ using namespace mycnn;
 using namespace boost;
 
 
-network resnet18(type phrase = train)
+network* resnet18(type phrase = train)
 {
 
 	//num,channel,dim
 	blob *input_data = new blob(BATCH_SIZE, 3, 224,phrase);
 	blob *labels = new blob(BATCH_SIZE, 1, 1);
 
-	network net;
+	static network net;
 
 	net.phrase = phrase;
 
@@ -964,5 +964,5 @@ network resnet18(type phrase = train)
 
 	printf("space costs : %d mb\n", (BATCH_SIZE * 3 * 224 * 224 + net.caculate_data_space()) * sizeof(mycnn::float_t) / 1024 / 1024);
 
-	return net;
+	return &net;
 }

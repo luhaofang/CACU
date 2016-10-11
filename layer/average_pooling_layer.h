@@ -125,11 +125,13 @@ public:
 	{
 		if (pad != 0) {
 			//if input_dim is less than the output_dim,should be padding to caculate
-			blob new_input = append_padding_data_blob(bottoms[0]->data, input_dim, pad);
+			blob *new_input = new blob(bottoms[0]->num, channel, input_dim + pad);
+				
+			append_padding_data_blob(bottoms[0]->data, input_dim, pad, new_input->data);
 
 			blob col_data(bottoms[0]->data.size(), channel, output_dim*kernel_size);
 
-			img2col(new_input.data, kernel_size, stride, 0, input_dim + pad, output_dim, col_data.data);
+			img2col(new_input->data, kernel_size, stride, 0, input_dim + pad, output_dim, col_data.data);
 
 			int param_w,param_h,flag = output_dim - 1;
 
@@ -161,6 +163,7 @@ public:
 					}
 				}
 			}
+			delete new_input;
 		}
 		else
 		{

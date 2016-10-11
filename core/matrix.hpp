@@ -87,44 +87,49 @@ extern "C" void set_data_gpu(float_t **&data, int num, int length,
 
 #else
 
-blob copy_padding_data_blob(vector<vec_t> &data, int input_dim, int pad) {
-	blob signdata;
-	int output_dim_ = input_dim + (2 * pad);
-	int channel_ = data[0].size() / (input_dim * input_dim);
-	int length = output_dim_ * output_dim_ * channel_;
-	int flag = pad + input_dim;
-	for (int num = 0; num < data.size(); num++) {
-		vec_t sign_i(length);
-		float_t *s_fp = &sign_i[0];
-		float_t *sp = &data[num][0];
+	void copy_padding_data_blob(vector<vec_t> &data, int input_dim, int pad, vector<vec_t> &signdata) {
 
-		float_t *p, *dp;
 
-		for (int i = 0; i < output_dim_; i++) {
-			for (int j = 0; j < output_dim_; j++) {
-				if ((i >= pad && i < flag) && (j >= pad && j < flag)) {
-					for (int c = 0; c < channel_; c++) {
-						p = s_fp + (i * output_dim_ + j) * channel_ + c;
-						dp = sp + ((i - pad) * input_dim + (j - pad)) * channel_
+		int output_dim_ = input_dim + (2 * pad);
+		int channel_ = data[0].size() / (input_dim * input_dim);
+		int length = output_dim_ * output_dim_ * channel_;
+		int flag = pad + input_dim;
+		assert(signdata.size() == data.size());
+		assert(signdata[0].size() == length);
+
+		for (int num = 0; num < data.size(); num++) {
+
+			float_t *s_fp = &signdata[num][0];
+			float_t *sp = &data[num][0];
+
+			float_t *p, *dp;
+
+			for (int i = 0; i < output_dim_; i++) {
+				for (int j = 0; j < output_dim_; j++) {
+					if ((i >= pad && i < flag) && (j >= pad && j < flag)) {
+						for (int c = 0; c < channel_; c++) {
+							p = s_fp + (i * output_dim_ + j) * channel_ + c;
+							dp = sp + ((i - pad) * input_dim + (j - pad)) * channel_
 								+ c;
-						*p = *dp;
+							*p = *dp;
+						}
 					}
 				}
 			}
 		}
-		signdata.data.push_back(sign_i);
 	}
-	return signdata;
-}
 
-blob append_padding_data_blob(vector<vec_t> &data, int input_dim, int pad) {
-	blob signdata;
+	void append_padding_data_blob(vector<vec_t> &data, int input_dim, int pad, vector<vec_t> &signdata) {
+	
 	int output_dim_ = input_dim + pad;
 	int channel_ = data[0].size() / (input_dim * input_dim);
 	int length = output_dim_ * output_dim_ * channel_;
+	assert(signdata.size() == data.size());
+	assert(signdata[0].size() == length);
+
 	for (int num = 0; num < data.size(); num++) {
-		vec_t sign_i(length);
-		float_t *s_fp = &sign_i[0];
+
+		float_t *s_fp = &signdata[num][0];
 		float_t *sp = &data[num][0];
 
 		float_t *p, *dp;
@@ -140,9 +145,7 @@ blob append_padding_data_blob(vector<vec_t> &data, int input_dim, int pad) {
 				}
 			}
 		}
-		signdata.data.push_back(sign_i);
 	}
-	return signdata;
 }
 
 void copy_unpadding_data(vector<vec_t> &data, int input_dim, int pad,
@@ -192,13 +195,14 @@ void append_unpadding_data(vector<vec_t> &data, int input_dim, int pad,
 	}
 }
 
-bin_blob copy_padding_data_sign(vector<dynamic_bitset<>> &data, int input_dim,
-		int pad) {
-	bin_blob signdata;
+void copy_padding_data_sign(vector<dynamic_bitset<>> &data, int input_dim,
+	int pad, vector<dynamic_bitset<>> &signdata) {
+	
 	int output_dim_ = input_dim + (2 * pad);
 	int channel_ = data[0].size() / (input_dim * input_dim);
 	int length = output_dim_ * output_dim_ * channel_;
 	int flag = pad + input_dim;
+
 	for (int num = 0; num < data.size(); num++) {
 		dynamic_bitset<> sign_i;
 		for (int i = 0; i < output_dim_; i++) {
@@ -218,9 +222,8 @@ bin_blob copy_padding_data_sign(vector<dynamic_bitset<>> &data, int input_dim,
 				}
 			}
 		}
-		signdata.bin_data.push_back(sign_i);
+		signdata.push_back(sign_i);
 	}
-	return signdata;
 }
 
 void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
@@ -236,13 +239,14 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 	int sd_out, sn_out;
 	float_t *sd_out_cp, *sn_out_cp;
 
-	blob _data = copy_padding_data_blob(data, input_dim, pad);
+	blob *_data = new blob(data.size(), channel*(input_dim + 2 * pad)*(input_dim + 2 * pad));
+	copy_padding_data_blob(data, input_dim, pad, _data->data);
 
 	input_dim = input_dim + 2 * pad;
 
-	for (int num = 0; num < _data.data.size(); num++) {
+	for (int num = 0; num < _data->data.size(); num++) {
 
-		sdp = &_data.data[num][0];
+		sdp = &_data->data[num][0];
 		snp = &out_data[num][0];
 
 		//for output_dim's iteration
@@ -263,6 +267,7 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 				}
 			}
 	}
+	delete _data;
 }
 
 void img2bitcol(vector<dynamic_bitset<>> &data, int channel,int kernel_size, int stride,
@@ -284,16 +289,17 @@ void img2bitcol(vector<dynamic_bitset<>> &data, int channel,int kernel_size, int
 	int sd_out, sn_out;
 	int sd_out_c;
 
-	bin_blob _data = copy_padding_data_sign(data, input_dim, pad);
+	bin_blob *_data = new bin_blob();
+	copy_padding_data_sign(data, input_dim, pad, _data->bin_data);
 
 	input_dim = input_dim + 2 * pad;
 
 	int count = 0, motif = kernel_size * kernel_size * channel, index;
 	int flag = BIN_SIZE - 1, end_flag = motif - 1;
 
-	for (int num = 0; num < _data.bin_data.size(); num++) {
+	for (int num = 0; num < _data->bin_data.size(); num++) {
 
-		sdp = _data.bin_data[num];
+		sdp = _data->bin_data[num];
 		snp = &out_data[num][0];
 		//for output_dim's iteration
 		for (int i = 0; i < output_dim; i++)
@@ -321,6 +327,7 @@ void img2bitcol(vector<dynamic_bitset<>> &data, int channel,int kernel_size, int
 				}
 			}
 	}
+	delete _data;
 }
 
 void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
@@ -333,13 +340,14 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 	int sd_out;
 	float_t *sd_out_cp, *sn_out_cp;
 
-	blob _data = copy_padding_data_blob(data, input_dim, pad);
+	blob *_data = new blob(data.size(), channel*(input_dim + 2 * pad)*(input_dim + 2 * pad));
+	copy_padding_data_blob(data, input_dim, pad, _data->data);
 
 	input_dim = input_dim + 2 * pad;
 
-	for (int num = 0; num < _data.data.size(); num++) {
+	for (int num = 0; num < _data->data.size(); num++) {
 
-		sdp = &_data.data[num][0];
+		sdp = &_data->data[num][0];
 
 		//for output_dim's iteration
 		for (int i = 0; i < output_dim; i++)
@@ -359,6 +367,7 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 				}
 			}
 	}
+	delete _data;
 }
 
 //caculate the de_convolution for diff

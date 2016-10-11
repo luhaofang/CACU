@@ -35,10 +35,10 @@ class sgd {
 
 public:
 
-	sgd(network &net) {
+	sgd(network *&net) {
 
-		assert(net.net_.size() != 0);
-		this->net = (&net);
+		assert(net->net_.size() != 0);
+		this->net = net;
 		char_t param_name;
 		char_t layer_name;
 		map<char_t, int>::iterator it;
