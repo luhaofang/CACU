@@ -1,8 +1,8 @@
-#Calculate deep convolution neurAl network on Cell Unit
+# Calculate deep convolution neurAl network on Cell Unit
 
 This is a deep learning framework for cnn which using xnor method to accelerate calculating convolution layer on cpu.
 
-#features:
+# Features:
 
 -BIT cell calculating units,fast cpu running.
 	-using bit in order to accelerate the calculating performance on cpu.You'll find this version is ~X10 fast on cpu.
@@ -15,31 +15,31 @@ This is a deep learning framework for cnn which using xnor method to accelerate 
 -cross platform supported
 	-running on both linux and windows.
 	
-#layers support:
+# Layers support:
 
-	for this version
+for this version
 	
-	-layer:
-		-average_pooling_layer
-		-batch_normalization_layer
-		-convolution_layer
-		-eltwise_layer
-		-inner_product_layer
-		-max_pooling_layer
-		-relu_layer
-		-sigmoid_layer
-		-softmax_with_loss_layer
+-layer:
+	-average_pooling_layer
+	-batch_normalization_layer
+	-convolution_layer
+	-eltwise_layer
+	-inner_product_layer
+	-max_pooling_layer
+	-relu_layer
+	-sigmoid_layer
+	-softmax_with_loss_layer
 		
-	-bit layer:
-		-bin_activation_layer
-		-bit_convolution_layer
+-bit layer:
+	-bin_activation_layer
+	-bit_convolution_layer
 		
-#bit blob
+# Bit blob
 
-	We using dynamic_bitset which supplied by boost to binary the 32 bits parameters, Bin_blob is created for the binaried data flow in this framework.Each layer can be created on two kinds of 
+We using dynamic_bitset which supplied by boost to binary the 32 bits parameters, Bin_blob is created for the binaried data flow in this framework.Each layer can be created on two kinds of 
 blobs,flexiable for more bit logical calculating.
 
-#model design
+# Model design
 	
 	Build a cnn network like what you did in Caffe.You may easily create a CNN mode in CACU if you are a Caffe user. Block network design will support.
 	
