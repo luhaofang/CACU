@@ -2,4 +2,4 @@
 
 test accuracy:
 
-![image](https://github.com/PGImage/CACU/blob/master/example/mnist/img/accuracy.jpg)
+![image](https://github.com/CACU/blob/master/example/mnist/img/accuracy.jpg)
