@@ -30,7 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "utils.h"
 #include "config.h"
 
-#include "tools/cifar10.h"
 #include "tools/random.h"
 
 #include "blob.h"

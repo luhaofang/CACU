@@ -1,5 +1,5 @@
 #include <time.h>
-#include "../mycnn.h"
+#include "../../mycnn.h"
 
 using namespace mycnn;
 

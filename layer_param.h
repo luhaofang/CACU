@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include "core/matrix.hpp"
+
 #if GPU_MODE
 #include <cuda_runtime.h>
 #endif
