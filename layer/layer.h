@@ -103,7 +103,7 @@ namespace mycnn{
 		void set_params_init_value(char_t pName, param_init_type init_type, float_t value = 0.0){
 			this->_pPARAMS_TYPE[pName] = init_type;
 			if (xavier == init_type){
-				this->_pPARAMS_VALUE[pName] = sqrt((float_t)6.0 / (input_dim*input_dim*channel*BATCH_SIZE + output_dim*output_dim*output_channel*BATCH_SIZE));
+				this->_pPARAMS_VALUE[pName] = sqrt((float_t)6.0 / (input_dim*input_dim*channel + output_dim*output_dim*output_channel));
 			}
 			else{
 				this->_pPARAMS_VALUE[pName] = (float_t)value;
