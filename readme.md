@@ -17,7 +17,7 @@ This is a deep learning framework for cnn which using xnor method to accelerate 
 	
 # Layers support:
 
-	for this version
+for this version
 	
 - layer:
  - average_pooling_layer
@@ -39,7 +39,7 @@ This is a deep learning framework for cnn which using xnor method to accelerate 
 We using dynamic_bitset which supplied by boost to binary the 32 bits parameters, Bin_blob is created for the binaried data flow in this framework.Each layer can be created on two kinds of 
 blobs,flexiable for more bit logical calculating.
 
-#Model design
+# Model design
 	
 Build a cnn network like what you did in Caffe.You may easily create a CNN mode in CACU if you are a Caffe user. Block network design will support.
 	
@@ -59,3 +59,4 @@ Build a cnn network like what you did in Caffe.You may easily create a CNN mode 
 [5] Jia Y, Shelhamer E, Donahue J, et al. [Caffe: Convolutional architecture for fast feature embedding](https://arxiv.org/pdf/1408.5093.pdf)
 	arXiv preprint arXiv:1408.5093, 2014.
 
+Needs Collaborators~
