@@ -5,34 +5,34 @@ This is a deep learning framework for cnn which using xnor method to accelerate 
 # Features:
 
 - BIT cell calculating units,fast cpu running.
- -using bit in order to accelerate the calculating performance on cpu.You'll find this version is ~X10 fast on cpu.
- -GPU mode supported for trainning large-scaled model. 
- -caffe level precision in 32bits.
+ - using bit in order to accelerate the calculating performance on cpu.You'll find this version is ~X10 fast on cpu.
+ - GPU mode supported for trainning large-scaled model. 
+ - caffe level precision in 32bits.
 - nicely portable header only
- -only dependency needed just include boost(dynamic_bitset) if you need bit method.It's.
- -just include mycnn.h and write your model in C++. There is nothing to install.
- -squeezed model size,theoretically,achieve a ~X32 reduction in model size.
+ - only dependency needed just include boost(dynamic_bitset) if you need bit method.It's.
+ - just include mycnn.h and write your model in C++. There is nothing to install.
+ - squeezed model size,theoretically,achieve a ~X32 reduction in model size.
 - cross platform supported
- -running on both linux and windows.
+ - running on both linux and windows.
 	
 # Layers support:
 
 	for this version
 	
 - layer:
- -average_pooling_layer
- -batch_normalization_layer
- -convolution_layer
- -eltwise_layer
- -inner_product_layer
- -max_pooling_layer
- -relu_layer
- -sigmoid_layer
- -softmax_with_loss_layer
+ - average_pooling_layer
+ - batch_normalization_layer
+ - convolution_layer
+ - eltwise_layer
+ - inner_product_layer
+ - max_pooling_layer
+ - relu_layer
+ - sigmoid_layer
+ - softmax_with_loss_layer
 		
 - bit layer:
- -bin_activation_layer
- -bit_convolution_layer
+ - bin_activation_layer
+ - bit_convolution_layer
 		
 # Bit blob
 
