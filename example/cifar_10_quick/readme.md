@@ -2,8 +2,8 @@
 
 loss curve :
 
-![image](https://github.com/PGImage/CACU/blob/master/example/cifar_10_quick/img/loss.jpg)
+![image](https://github.com/luhaofang/CACU/blob/master/example/cifar_10_quick/img/loss.jpg)
 
 test accuracy:
 
-![image](https://github.com/PGImage/CACU/blob/master/example/cifar_10_quick/img/cifar10_quick.jpg)
+![image](https://github.com/luhaofang/CACU/blob/master/example/cifar_10_quick/img/cifar10_quick.jpg)
