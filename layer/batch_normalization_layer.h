@@ -204,9 +204,95 @@ public:
 
 	virtual const void save(std::ostream& os) override {
 
+		cudaError_t res;
+
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			os.write((char*)(&layer_name[i]), sizeof(layer_name[i]));
+		}
+
+		vec_t _data(channel);
+		res = cudaMemcpy((void*) (&_data[0]), (void*) (params->s_data["scale"]),
+				_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		for (auto w : _data) os.write((char*)(&w), sizeof(w));
+
+		res = cudaMemcpy((void*) (&_data[0]), (void*) (params->s_data["shift"]),
+				_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		for (auto w : _data) os.write((char*)(&w), sizeof(w));
+
+		res = cudaMemcpy((void*) (&_data[0]), (void*) (storage_data->s_data["smean"]),
+				_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		for (auto w : _data) os.write((char*)(&w), sizeof(w));
+
+		res = cudaMemcpy((void*) (&_data[0]), (void*) (storage_data->s_data["svar"]),
+				_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		for (auto w : _data) os.write((char*)(&w), sizeof(w));
+
 	}
 
 	virtual const void load(std::ifstream& is) override {
+		cudaError_t res;
+		string _sdata;
+		char _c;
+		float_t _d;
+
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			is.read(&_c, 1);
+			_sdata += _c;
+		}
+
+		assert(_sdata == layer_name);
+
+		vec_t _data(channel);
+
+		for (int num = 0; num < params->param_outnum["scale"]; num++)
+		for (int k = 0; k < params->param_dim["scale"]; k++)
+		{
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			_data[num*params->param_dim["scale"]+k] = _d;
+		}
+		res = cudaMemcpy((void*) (params->s_data["scale"]), (void*)(&_data[0]) ,
+				_data.size() * sizeof(float_t), cudaMemcpyHostToDevice);
+		CHECK(res);
+
+		for (int num = 0; num < params->param_outnum["shift"]; num++)
+		for (int k = 0; k < params->param_dim["shift"]; k++)
+		{
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			_data[num*params->param_dim["shift"]+k] = _d;
+		}
+		res = cudaMemcpy((void*) (params->s_data["shift"]), (void*)(&_data[0]) ,
+				_data.size() * sizeof(float_t), cudaMemcpyHostToDevice);
+		CHECK(res);
+
+		for (int num = 0; num < storage_data->param_outnum["smean"]; num++)
+		for (int k = 0; k < storage_data->param_dim["smean"]; k++)
+		{
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			_data[num* storage_data->param_dim["smean"]+k] = _d;
+		}
+		res = cudaMemcpy((void*) (storage_data->s_data["smean"]), (void*)(&_data[0]) ,
+				_data.size() * sizeof(float_t), cudaMemcpyHostToDevice);
+		CHECK(res);
+
+		for (int num = 0; num < storage_data->param_outnum["svar"]; num++)
+		for (int k = 0; k < storage_data->param_dim["svar"]; k++)
+		{
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			_data[num* storage_data->param_dim["svar"]+k] = _d;
+		}
+		res = cudaMemcpy((void*) (storage_data->s_data["svar"]), (void*)(&_data[0]) ,
+				_data.size() * sizeof(float_t), cudaMemcpyHostToDevice);
+		CHECK(res);
 
 	}
 
@@ -370,82 +456,66 @@ public:
 	}
 
 	virtual const void save(std::ostream& os) override {
-		os << layer_name;
-		os << " scale:";
-		for (auto scale : params->data["scale"]) {
-			for (auto w : scale) os << w << ",";
+
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			os.write((char*)(&layer_name[i]), sizeof(layer_name[i]));
 		}
-		os << " shift:";
-		for (auto shift : params->data["shift"]) {
-			for (auto w : shift) os << w << ",";
+
+		for (auto ws : params->data["scale"]) {
+			for (auto w : ws) os.write((char*)(&w), sizeof(w));
 		}
-		os << " smean:";
-		for (auto smean : storage_data->data["smean"]) {
-			for (auto w : smean) os << w << ",";
+		for (auto ws : params->data["shift"]) {
+			for (auto w : ws) os.write((char*)(&w), sizeof(w));
 		}
-		os << " svar:";
-		for (auto svar : storage_data->data["svar"]) {
-			for (auto w : svar) os << w << ",";
+
+		for (auto ws : storage_data->data["smean"]) {
+			for (auto w : ws) os.write((char*)(&w), sizeof(w));
 		}
-		os << "\n";
+		for (auto ws : storage_data->data["svar"]) {
+			for (auto w : ws) os.write((char*)(&w), sizeof(w));
+		}
 	}
 
 	virtual const void load(std::ifstream& is) override {
 
-		string _p_layer;
-		getline(is, _p_layer, '\n');
+		string _data;
+		char _c;
+		float_t _d;
 
-		vector<string> data;
-		vector<string> pdata;
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			is.read(&_c, 1);
+			_data += _c;
+		}
 
-		data = split(_p_layer, " ");
+		assert(_data == layer_name);
 
-		assert(data[0] == layer_name);
-
-		int start;
-
-		pdata = split(split(data[1], ":")[1], ",");
 		for (int num = 0; num < params->data["scale"].size(); num++)
+		for (int k = 0; k < params->data["scale"][0].size(); k++)
 		{
-			start = num * params->data["scale"][0].size();
-			for (int k = 0; k < params->data["scale"][0].size(); k++)
-			{
-				params->data["scale"][num][k] = (float_t)atof(pdata[start + k].c_str());
-			}
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			params->data["scale"][num][k] = _d;
 		}
 
-		pdata = split(split(data[2], ":")[1], ",");
 		for (int num = 0; num < params->data["shift"].size(); num++)
+		for (int k = 0; k < params->data["shift"][0].size(); k++)
 		{
-			start = num * params->data["shift"][0].size();
-			for (int k = 0; k < params->data["shift"][0].size(); k++)
-			{
-				params->data["shift"][num][k] = (float_t)atof(pdata[start + k].c_str());
-			}
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			params->data["shift"][num][k] = _d;
 		}
-
-		pdata = split(split(data[3], ":")[1], ",");
 		for (int num = 0; num < storage_data->data["smean"].size(); num++)
+		for (int k = 0; k < storage_data->data["smean"][0].size(); k++)
 		{
-			start = num * storage_data->data["smean"][0].size();
-			for (int k = 0; k < storage_data->data["smean"][0].size(); k++)
-			{
-				storage_data->data["smean"][num][k] = (float_t)atof(pdata[start + k].c_str());
-			}
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			storage_data->data["smean"][num][k] = _d;
 		}
-
-		pdata = split(split(data[4], ":")[1], ",");
 		for (int num = 0; num < storage_data->data["svar"].size(); num++)
+		for (int k = 0; k < storage_data->data["svar"][0].size(); k++)
 		{
-			start = num * storage_data->data["svar"][0].size();
-			for (int k = 0; k < storage_data->data["svar"][0].size(); k++)
-			{
-				storage_data->data["svar"][num][k] = (float_t)atof(pdata[start + k].c_str());
-			}
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			storage_data->data["svar"][num][k] = _d;
 		}
-		vector<string>().swap(data);
-		vector<string>().swap(pdata);
-
 	}
 
 	virtual const void setup() override {

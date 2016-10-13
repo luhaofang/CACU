@@ -335,7 +335,7 @@ void train_test() {
 
 	//network *net = cifar_quick();
 	network *net = cifar_myquick_xnor();
-	//net->load("E:/mywork/experiment/test_myquick_bin.model");
+	//net->load("/home/seal/dataset/experiment/cifar10/test_myquick_bin.model");
 
 	vector<vec_t> input_data;
 	vector<vec_t> labels;
@@ -385,7 +385,7 @@ void train_test() {
 
 		if (i % SNAPSHOT == 0) {
 			ostringstream oss;
-			oss << "/home/seal/dataset/experiment/test_myquick_bin_" << i
+			oss << "/home/seal/dataset/experiment/cifar10/test_myquick_bin_" << i
 					<< ".model";
 			net->save(oss.str().c_str());
 		}
@@ -401,15 +401,15 @@ void train_test()
 	//network *net = cifar_quick();
 	network *net = cifar_myquick_xnor();
 
-//	net->load("E:/mywork/experiment/test_myquick_bin.model");
+	net->load("/home/seal/dataset/experiment/cifar10/test_myquick_bin_10.model");
 
 	blob *input_data = new blob();
 	blob *labels = new blob();
 	blob *test_data = new blob();
 	blob *test_labels = new blob();
 
-	string location = "E:/mywork/data/cifar-10-batches-bin/";
-	string cifar_location = "E:/mywork/data/cifar-10-batches-bin/";
+	string location = "/home/seal/dataset/caffe/data/cifar10/";
+	string cifar_location = "/home/seal/dataset/caffe/data/cifar10/";
 
 	sgd s(net);
 	s.caculate_sgd_data_space();
@@ -423,7 +423,7 @@ void train_test()
 		readdata_sub_dim((oss.str()), input_data->data, labels->data, mean);
 	}
 
-	readdata_sub_dim("E:/mywork/data/cifar-10-batches-bin/test_batch.bin", test_data->data, test_labels->data, mean);
+	readdata_sub_dim("/home/seal/dataset/caffe/data/cifar10/test_batch.bin", test_data->data, test_labels->data, mean);
 
 	for (unsigned int i = 1; i <= MAX_ITER; i++) {
 

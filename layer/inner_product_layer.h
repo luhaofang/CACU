@@ -70,23 +70,74 @@ public:
 		//diff for prev layer
 		CACU_DE_GEMM_DIFF_GPU(tops[0]->diff, tops[0]->num, output_channel,input_dim*input_dim*channel, params->data["w"], bottoms[0]->diff);
 
-//		cudaError_t res;
-//		vec_t test_data(bottoms[0]->num*channel*input_dim);
-//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (bottoms[0]->s_diff),
-//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//		CHECK(res);
-//		for(int i = 0; i < test_data.size(); i ++)
-//		printf("%f,",test_data[i]);
-//		printf("\n");
-
 	}
 
 	virtual const void save(std::ostream& os) override {
 
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			os.write((char*)(&layer_name[i]), sizeof(layer_name[i]));
+		}
+
+		vec_t _data(output_channel*channel*input_dim*input_dim);
+
+		cudaError_t res;
+		res = cudaMemcpy((void*) (&_data[0]), (void*) (params->s_data["w"]),
+				_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		for (auto w : _data) os.write((char*)(&w), sizeof(w));
+
+		_data.resize(output_channel);
+
+		res = cudaMemcpy((void*) (&_data[0]), (void*) (params->s_data["bias"]),
+				_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		for (auto w : _data) os.write((char*)(&w), sizeof(w));
+
 	}
 
 	virtual const void load(std::ifstream& is) override {
+		printf("fuck");
+		cudaError_t res;
 
+		string _sdata;
+		char _c;
+		float_t _d;
+
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			is.read(&_c, 1);
+			_sdata += _c;
+		}
+
+		assert(_sdata == layer_name);
+
+
+		vec_t _data(output_channel*channel*input_dim*input_dim);
+
+		for (int num = 0; num < params->param_outnum["w"]; num++)
+		for (int k = 0; k < params->param_dim["w"]; k++)
+		{
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			_data[num*params->param_dim["w"]+k] = _d;
+		}
+		res = cudaMemcpy((void*) (params->s_data["w"]), (void*)(&_data[0]) ,
+				_data.size() * sizeof(float_t), cudaMemcpyHostToDevice);
+		CHECK(res);
+
+		_data.resize(output_channel);
+
+		for (int num = 0; num < params->param_outnum["bias"]; num++)
+		for (int k = 0; k < params->param_dim["bias"]; k++)
+		{
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			_data[num*params->param_dim["bias"]+k] = _d;
+		}
+		res = cudaMemcpy((void*) (params->s_data["bias"]), (void*)(&_data[0]) ,
+				_data.size() * sizeof(float_t), cudaMemcpyHostToDevice);
+		CHECK(res);
 	}
 
 	virtual const void setup() override {
@@ -152,54 +203,46 @@ public:
 	}
 
 	virtual const void save(std::ostream& os) override {
-		os << layer_name;
-		os << " w:";
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			os.write((char*)(&layer_name[i]), sizeof(layer_name[i]));
+		}
+
 		for (auto ws : params->data["w"]) {
-			for (auto w : ws) os << w << ",";
+			for (auto w : ws) os.write((char*)(&w), sizeof(w));
 		}
-		os << " bias:";
-		for (auto bias : params->data["bias"]) {
-			for (auto w : bias) os << w << ",";
+		for (auto ws : params->data["bias"]) {
+			for (auto w : ws) os.write((char*)(&w), sizeof(w));
 		}
-		os << "\n";
 	}
 
 	virtual const void load(std::ifstream& is) override {
 
-		string _p_layer;
-		getline(is, _p_layer, '\n');
+		string _data;
+		char _c;
+		float_t _d;
 
-		vector<string> data;
-		vector<string> pdata;
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			is.read(&_c, 1);
+			_data += _c;
+		}
 
-		data = split(_p_layer, " ");
+		assert(_data == layer_name);
 
-		assert(data[0] == layer_name);
-
-		int start;
-
-		pdata = split(split(data[1], ":")[1], ",");
 		for (int num = 0; num < params->data["w"].size(); num++)
+		for (int k = 0; k < params->data["w"][0].size(); k++)
 		{
-			start = num * params->data["w"][0].size();
-			for (int k = 0; k < params->data["w"][0].size(); k++)
-			{
-				params->data["w"][num][k] = (float_t)atof(pdata[start + k].c_str());
-			}
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			params->data["w"][num][k] = _d;
 		}
 
-		pdata = split(split(data[2], ":")[1], ",");
 		for (int num = 0; num < params->data["bias"].size(); num++)
+		for (int k = 0; k < params->data["bias"][0].size(); k++)
 		{
-			start = num * params->data["bias"][0].size();
-			for (int k = 0; k < params->data["bias"][0].size(); k++)
-			{
-				params->data["bias"][num][k] = (float_t)atof(pdata[start + k].c_str());
-			}
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			params->data["bias"][num][k] = _d;
 		}
-
-		vector<string>().swap(data);
-		vector<string>().swap(pdata);
 	}
 
 	virtual const void setup() override {

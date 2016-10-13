@@ -6,8 +6,8 @@ using namespace mycnn;
 using namespace boost;
 using namespace std;
 
-//#include "tools/cifar10.h"
-#include "tools/mnist.h"
+#include "tools/cifar10.h"
+//#include "tools/mnist.h"
 
 int main() {
 

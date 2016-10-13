@@ -18,7 +18,7 @@ int ReverseInt(int i) {
 	return ((int) ch1 << 24) + ((int) ch2 << 16) + ((int) ch3 << 8) + ch4;
 }
 
-void read_mnist(string filename, vector<vec_t> &vec, mycnn::float_t scale) {
+void read_mnist(string filename, vector<vec_t> &vec, float_t scale) {
 	ifstream file(filename, ios::binary);
 	if (file.is_open()) {
 		int magic_number = 0;
@@ -40,7 +40,7 @@ void read_mnist(string filename, vector<vec_t> &vec, mycnn::float_t scale) {
 				for (int c = 0; c < n_cols; ++c) {
 					unsigned char temp = 0;
 					file.read((char*) &temp, sizeof(temp));
-					tp[r * 28 + c] = (mycnn::float_t) ((unsigned int) temp) * scale;
+					tp[r * 28 + c] = (float_t) ((unsigned int) temp) * scale;
 				}
 			}
 			vec.push_back(tp);
@@ -63,7 +63,7 @@ void read_mnist_label(string filename, vector<vec_t> &vec) {
 		for (int i = 0; i < number_of_images; ++i) {
 			unsigned char temp = 0;
 			file.read((char*) &temp, sizeof(temp));
-			vec_t label(1,(mycnn::float_t) ((unsigned int) temp));
+			vec_t label(1,(float_t) ((unsigned int) temp));
 			vec.push_back(label);
 		}
 	}
@@ -72,7 +72,7 @@ void read_mnist_label(string filename, vector<vec_t> &vec) {
 #if GPU_MODE
 
 void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
-		mycnn::float_t *&out_data) {
+		float_t *&out_data) {
 
 	cudaError_t res;
 
@@ -82,7 +82,7 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 
 	vec_t h_data(count * length);
 
-	mycnn::float_t *start_data = &h_data[0];
+	float_t *start_data = &h_data[0];
 
 	int start_index;
 
@@ -97,7 +97,7 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 	}
 
 	res = cudaMemcpy((void*) (out_data), (void*) (start_data),
-			count * length * sizeof(mycnn::float_t), cudaMemcpyHostToDevice);
+			count * length * sizeof(float_t), cudaMemcpyHostToDevice);
 	CHECK(res);
 
 	vec_t().swap(h_data);
@@ -107,7 +107,7 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 
 void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 		vector<vec_t> &out_data) {
-	mycnn::float_t *snp, *sdp;
+	float_t *snp, *sdp;
 
 	start = start % data_blob.size();
 
@@ -147,7 +147,7 @@ void train_test() {
 	sgd s(net);
 	s.caculate_sgd_data_space();
 
-	mycnn::float_t scale = 0.00390625;
+	float_t scale = 0.00390625;
 
 	read_mnist(data_location, input_data, scale);
 	read_mnist_label(label_location, labels);
@@ -213,7 +213,7 @@ void train_test() {
 	sgd s(net);
 	s.caculate_sgd_data_space();
 
-	mycnn::float_t scale = 0.00390625;
+	float_t scale = 0.00390625;
 
 	read_mnist(data_location, input_data->data, scale);
 	read_mnist_label(label_location, labels->data);
@@ -276,7 +276,7 @@ void test_data() {
 	string test_label_location =
 			"/home/seal/dataset/experiment/mnist/t10k-labels.idx1-ubyte";
 
-	mycnn::float_t scale = 0.00390625;
+	float_t scale = 0.00390625;
 
 	blob *result;
 

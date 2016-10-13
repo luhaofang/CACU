@@ -170,9 +170,11 @@ public:
 		is.precision(std::numeric_limits<float_t>::digits10);
 
 		for (int i = 0; i < layers.size(); i++) {
-			if (net_[layers[i]]->params != NULL)
-				net_[layers[i]]->load(is);
+
+			printf("%s\n", net_[layers[i]]->layer_name.c_str());
+			net_[layers[i]]->load(is);
 		}
+		is.close();
 	}
 
 	void set_iter(int iter) {
@@ -269,8 +271,8 @@ private:
 			pP_SPACE _s_params = net_[layer_name]->_pPARAMS;
 
 			layer_param* _param = new layer_param(_s_params,
-				net_[layer_name]->_pPARAMS_TYPE,
-				net_[layer_name]->_pPARAMS_VALUE);
+					net_[layer_name]->_pPARAMS_TYPE,
+					net_[layer_name]->_pPARAMS_VALUE);
 			P_MEM_SPACE[layer_name] = _param;
 			net_[layer_name]->params = _param;
 

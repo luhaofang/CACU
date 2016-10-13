@@ -113,11 +113,96 @@ public:
 	}
 
 	virtual const void save(std::ostream& os) override {
+		cudaError_t res;
 
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			os.write((char*)(&layer_name[i]), sizeof(layer_name[i]));
+		}
+
+		vec_i _bin_data(output_channel*block_size);
+		res = cudaMemcpy((void*) (&_bin_data[0]), (void*) (params->s_bin_data["w"]),
+				_bin_data.size() * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		for (auto w : _bin_data) os.write((char*)(&w), sizeof(w));
+
+		vec_t _data(output_channel);
+
+		res = cudaMemcpy((void*) (&_data[0]), (void*) (params->s_data["a"]),
+				_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		for (auto w : _data) os.write((char*)(&w), sizeof(w));
+
+		if(use_for_training) {
+
+			_data.resize(output_channel*channel*kernel_size*kernel_size);
+
+			res = cudaMemcpy((void*) (&_data[0]), (void*) (params->s_data["real_w"]),
+					_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+			CHECK(res);
+
+			for (auto w : _data) os.write((char*)(&w), sizeof(w));
+		}
 	}
 
 	virtual const void load(std::ifstream& is) override {
 
+		string _sdata;
+		char _c;
+		float_t _d;
+		unsigned int _u;
+
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			is.read(&_c, 1);
+			_sdata += _c;
+		}
+
+		cudaError_t res;
+
+		assert(_sdata == layer_name);
+
+		vec_i _bin_data(output_channel*block_size);
+
+		for (int num = 0; num < params->bin_param_outnum["w"]; num++)
+		for (int k = 0; k < block_size; k++)
+		{
+			is.read(reinterpret_cast<char*>(&_u), sizeof(unsigned int));
+			_bin_data[num*block_size+k] = _u;
+		}
+		res = cudaMemcpy((void*) (params->s_bin_data["w"]), (void*)(&_bin_data[0]) ,
+				_bin_data.size() * sizeof(unsigned int), cudaMemcpyHostToDevice);
+		CHECK(res);
+
+		vec_t _data(output_channel);
+
+		for (int num = 0; num < params->param_outnum["a"]; num++)
+		for (int k = 0; k < params->param_dim["a"]; k++)
+		{
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			_data[num*params->param_dim["a"]+k] = _d;
+		}
+		res = cudaMemcpy((void*) (params->s_data["a"]), (void*)(&_data[0]) ,
+				_data.size() * sizeof(float_t), cudaMemcpyHostToDevice);
+		CHECK(res);
+
+		if(use_for_training) {
+
+			_data.resize(output_channel*channel*kernel_size*kernel_size);
+
+			for (int num = 0; num < params->param_outnum["real_w"]; num++)
+			for (int k = 0; k < params->param_dim["real_w"]; k++)
+			{
+				is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+				_data[num* params->param_dim["real_w"]+k] = _d;
+			}
+			res = cudaMemcpy((void*) (params->s_data["real_w"]), (void*)(&_data[0]) ,
+					_data.size() * sizeof(float_t), cudaMemcpyHostToDevice);
+			CHECK(res);
+
+		}
 	}
 
 	virtual const void setup() override {
@@ -201,67 +286,65 @@ public:
 
 	virtual const void save(std::ostream& os) override {
 		resigned_weights();
-		os << layer_name;
-		os << " w:";
+
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			os.write((char*)(&layer_name[i]), sizeof(layer_name[i]));
+		}
+
 		for (auto ws : params->bin_data["w"]) {
-			for (auto w : ws) os << w << ",";
+			for (auto w : ws) os.write((char*)(&w), sizeof(w));
 		}
-		os << " a:";
 		for (auto ws : params->data["a"]) {
-			for (auto w : ws) os << w << ",";
+			for (auto w : ws) os.write((char*)(&w), sizeof(w));
 		}
-		os << " real_w:";
-		for (auto ws : params->data["real_w"]) {
-			for (auto w : ws) os << w << ",";
+
+		if (use_for_training) {
+
+			for (auto ws : params->data["real_w"]) {
+				for (auto w : ws) os.write((char*)(&w), sizeof(w));
+			}
 		}
-		os << "\n";
 	}
 
 	virtual const void load(std::ifstream& is) override {
 
-		string _p_layer;
-		getline(is, _p_layer, '\n');
+		string _data;
+		char _c;
+		float_t _d;
+		unsigned int _u;
 
-		vector<string> data;
-		vector<string> pdata;
+		for (int i = 0; i < layer_name.size(); i++)
+		{
+			is.read(&_c, 1);
+			_data += _c;
+		}
 
-		data = split(_p_layer, " ");
+		assert(_data == layer_name);
 
-		assert(data[0] == layer_name);
-
-		int start;
-
-		pdata = split(split(data[1], ":")[1], ",");
 		for (int num = 0; num < params->bin_data["w"].size(); num++)
+		for (int k = 0; k < params->bin_data["w"][0].size(); k++)
 		{
-			start = num * params->bin_data["w"][0].size();
-			for (int k = 0; k < params->bin_data["w"][0].size(); k++)
-			{
-				params->bin_data["w"][num][k] = strtoul(pdata[start + k].c_str(), NULL, 10);
-			}
+			is.read(reinterpret_cast<char*>(&_u), sizeof(unsigned int));
+			params->bin_data["w"][num][k] = _u;
 		}
 
-		pdata = split(split(data[2], ":")[1], ",");
 		for (int num = 0; num < params->data["a"].size(); num++)
+		for (int k = 0; k < params->data["a"][0].size(); k++)
 		{
-			start = num * params->data["a"][0].size();
-			for (int k = 0; k < params->data["a"][0].size(); k++)
-			{
-				params->data["a"][num][k] = (float_t)atof(pdata[start + k].c_str());
-			}
+			is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+			params->data["a"][num][k] = _d;
 		}
 
-		pdata = split(split(data[3], ":")[1], ",");
-		for (int num = 0; num < params->data["real_w"].size(); num++)
-		{
-			start = num * params->data["real_w"][0].size();
+		if (use_for_training) {
+
+			for (int num = 0; num < params->data["real_w"].size(); num++)
 			for (int k = 0; k < params->data["real_w"][0].size(); k++)
 			{
-				params->data["real_w"][num][k] = (float_t)atof(pdata[start + k].c_str());
+				is.read(reinterpret_cast<char*>(&_d), sizeof(float_t));
+				params->data["real_w"][num][k] = _d;
 			}
 		}
-		vector<string>().swap(data);
-		vector<string>().swap(pdata);
 	}
 
 	virtual const void setup() override {
@@ -445,6 +528,8 @@ private:
 	void DELETE_DATA() {
 
 	}
+
+	bool use_for_training = true;
 
 };
 
