@@ -11,7 +11,7 @@ This is a deep learning framework for cnn which using xnor method to accelerate 
 - nicely portable header only
  - only dependency needed just include boost(dynamic_bitset) if you need bit method.
  - just include mycnn.h and write your model in C++. There is nothing to install.
- - squeezed model size,theoretically,achieve a ~X32 reduction in model size.
+ - squeezed model size ,achieve a ~X32 reduction in convolution layer.
 - cross platform supported
  - running on both linux and windows.
 	
@@ -36,12 +36,11 @@ for this version
 		
 # Bit blob
 
-We using dynamic_bitset which supplied by boost to binary the 32 bits parameters, Bin_blob is created for the binaried data flow in this framework.Each layer can be created on two kinds of 
-blobs,flexiable for more bit logical calculating.
+We use dynamic_bitset which supplied by boost to binary the 32 bits parameters, Bin_blob is created for the binaried data flow in this framework.Each layer can be created on two kinds of blobs,flexiable for more bit logical calculating.
 
 # Model design
 	
-Build a cnn network like what you did in Caffe.You may easily create a CNN mode in CACU if you are a Caffe user. Block network design will support.
+Build a cnn network like what you did in Caffe.You may easily create a CNN mode in CACU if you are a Caffe user.
 	
 # References
 [1] A Krizhevsky, I Sutskever, GE Hinton. [Imagenet classification with deep convolutional neural networks.](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf). 
