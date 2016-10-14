@@ -194,6 +194,8 @@ public:
 	virtual const void forward() override
 	{
 
+		//CACU_RESET_CPU(storage_data->data["col_data"]);
+
 		//unroll for convoluation
 		img2col(bottoms[0]->data, kernel_size, stride, pad, input_dim, output_dim, storage_data->data["col_data"]);
 

@@ -234,9 +234,9 @@ private:
 							&net->net_[layer_name]->params->data[param_name][num][0];
 					//v
 					pv = &data_acc_v[layer_name]->data[param_name][num][0];
-					if (num == 0)
-						printf("layer('%s')_%s : dw_%.10f,", layer_name.c_str(),
-								param_name.c_str(), *pw);
+					//if (num == 0)
+					//	printf("layer('%s')_%s : dw_%.10f,", layer_name.c_str(),
+					//			param_name.c_str(), *pw);
 					//update params and acc_v
 					for (int length = 0; length < _it->second[num].size();
 							length++) {
@@ -252,8 +252,8 @@ private:
 							*(p + length) -= *(pv + length);
 						}
 					}
-					if (num == 0)
-						printf("v_%.10f, w_%.10f\n", *pv, *p);
+					//if (num == 0)
+					//	printf("v_%.10f, w_%.10f\n", *pv, *p);
 				}
 			}
 		}

@@ -99,7 +99,6 @@ public:
 	}
 
 	virtual const void load(std::ifstream& is) override {
-		printf("fuck");
 		cudaError_t res;
 
 		string _sdata;
