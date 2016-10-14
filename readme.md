@@ -52,7 +52,7 @@ Build a cnn network like what you did in Caffe.You may easily create a CNN mode 
 [3] S Ioffe, C Szegedy. [Batch normalization: Accelerating deep network training by reducing internal covariate shift.](https://arxiv.org/pdf/1502.03167v3.pdf).
     arXiv preprint arXiv:1502.03167, 2015.
 	
-[4] Courbariaux M, Bengio Y. Binarynet: [Training deep neural networks with weights and activations constrained to+ 1 or-1](https://arxiv.org/pdf/1602.02830.pdf). 
+[4] Courbariaux M, Bengio Y. [Binarynet: Training deep neural networks with weights and activations constrained to+ 1 or-1](https://arxiv.org/pdf/1602.02830.pdf). 
 	arXiv preprint arXiv:1602.02830, 2016.
 	
 [5] Jia Y, Shelhamer E, Donahue J, et al. [Caffe: Convolutional architecture for fast feature embedding](https://arxiv.org/pdf/1408.5093.pdf)
