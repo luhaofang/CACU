@@ -58,15 +58,23 @@ public:
 
 	virtual const void forward() override
 	{
-
+		clock_t start = clock();
 		copy_padding_data_blob_gpu(bottoms[0]->data, bottoms[0]->num, input_dim, channel, pad, storage_data->data["pad_data"]);
+		clock_t end = clock();
+		//printf("%d,",end-start);
 
+		start = clock();
 		//unroll for convoluation
 		img2col_gpu( storage_data->data["pad_data"], bottoms[0]->num, channel,
 				input_dim+2*pad, kernel_size, stride, output_dim,storage_data->data["col_data"]);
+		end = clock();
+		//printf("%d,",end-start);
 
+		start = clock();
 		CACU_SCALE_SUM_ROW_GPU(storage_data->data["col_data"], bottoms[0]->num, kernel_size*kernel_size*channel, output_channel, output_dim*output_dim*output_channel, params->data["w"],
 				params->data["bias"], tops[0]->data);
+		end = clock();
+		//printf("%d\n",end-start);
 
 	}
 
@@ -193,8 +201,6 @@ public:
 
 	virtual const void forward() override
 	{
-
-		//CACU_RESET_CPU(storage_data->data["col_data"]);
 
 		//unroll for convoluation
 		img2col(bottoms[0]->data, kernel_size, stride, pad, input_dim, output_dim, storage_data->data["col_data"]);

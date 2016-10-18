@@ -76,6 +76,49 @@ extern "C" void CACU_SUM_SIZE_GPU(float_t **&data, int num, int sum_size,
 	cudaThreadSynchronize();
 }
 
+__global__ void _k_CACU_MEAN_GPU(float_t **data, int num, int length,
+		float_t **out_data) {
+
+	int tid = threadIdx.x;
+	int bid = blockIdx.x;
+
+	int threadid = bid * THREADNUM + tid;
+
+	int data_row, data_col;
+
+	extern __shared__ float_t shared_data[];
+
+	for (int i = bid; i < num; i += BLOCKNUM) {
+		data_row = i;
+		data_col = 0;
+
+		shared_data[tid] = 0;
+
+		for (int j = tid; j < length; j += THREADNUM) {
+
+			shared_data[tid] += data[data_row][j];
+		}
+
+		__syncthreads();
+
+		if (tid == 0) {
+			for (int j = 1; j < THREADNUM; j++)
+				shared_data[0] += shared_data[j];
+			out_data[data_row][0] = shared_data[0] / length;
+		}
+	}
+}
+
+//vec_t(size) -> vec_t(size/sum_size)
+extern "C" void CACU_MEAN_GPU(float_t **&data, int num, int length,
+		float_t **&out_data) {
+
+	_k_CACU_MEAN_GPU<<<BLOCKNUM, THREADNUM, THREADNUM * sizeof(float_t)>>>(data,
+			num, length, out_data);
+
+	cudaThreadSynchronize();
+}
+
 __global__ void _k_CACU_SUM_SIZE_ABS_GPU(float_t **data, int num, int sum_size,
 		int length, int out_length, float_t **out_data) {
 
@@ -642,6 +685,36 @@ extern "C" void CACU_SUB_GPU(float_t **&data, float_t *&bias, int num,
 	cudaThreadSynchronize();
 }
 
+__global__ void _k_CACU_SUB_GPU_D(float_t **data, float_t **bias, int num,
+		int length, float_t **out_data) {
+
+	int tid = threadIdx.x;
+	int bid = blockIdx.x;
+
+	int threadid = bid * THREADNUM + tid;
+
+	int data_row, data_col;
+
+	for (int i = threadid; i < num * length; i += BLOCKNUM * THREADNUM) {
+		data_row = i / length;
+		data_col = i % length;
+
+		out_data[data_row][data_col] = data[data_row][data_col]
+				- bias[data_row][0];
+	}
+}
+
+//nums of vec_t(size) -> vec_t(size/sum_size)
+//caculate the subtraction for batch_size
+extern "C" void CACU_SUB_GPU_D(float_t **&data, float_t **&bias, int num,
+		int length, float_t **&out_data) {
+
+	_k_CACU_SUB_GPU_D<<<BLOCKNUM, THREADNUM, 0>>>(data, bias, num, length,
+			out_data);
+
+	cudaThreadSynchronize();
+}
+
 __global__ void _k_CACU_DIVISION_GPU(float_t **data, float_t *scale, int num,
 		int length, int channel, float_t **out_data) {
 
@@ -774,7 +847,7 @@ extern "C" void CACU_MU_GPU(float_t **&data, float_t **&dx_ba, float_t *&mean,
 	int dim = length / channel;
 
 	_k_CACU_MU_GPU<<<channel, THREADNUM, THREADNUM * sizeof(float_t)>>>(data,
-			dx_ba, mean, variance, rou, dim,channel, num,out_data);
+			dx_ba, mean, variance, rou, dim, channel, num, out_data);
 
 	cudaThreadSynchronize();
 
@@ -822,6 +895,63 @@ extern "C" void CACU_DX_GPU(float_t **&data, float_t **&dx_ba, float_t *&mean,
 	cudaThreadSynchronize();
 }
 
+//__global__ void _k_CACU_SCALE_SUM_ROW_GPU(float_t **data, int num,
+//		int kernels_num, int sum_size, int out_length, float_t **kernel,
+//		float_t **bias, float_t **out_data) {
+//
+//	int tid = threadIdx.x;
+//	int bid = blockIdx.x;
+//
+//	int threadid = bid * THREADNUM + tid;
+//
+//	int start_in, start_out;
+//
+//	int data_row, data_col;
+//
+//	int c;
+//
+//	extern __shared__ float_t shared_data[];
+//
+//	for (int i = bid; i < num * out_length; i += BLOCKNUM) {
+//		data_row = i / out_length;
+//		data_col = i % out_length;
+//
+//		start_in = (data_col / kernels_num) * sum_size;
+//
+//		c = data_col % kernels_num;
+//
+//		start_out = data_col;
+//
+//		for (int j = tid; j < sum_size; j += THREADNUM)
+//		{
+//			shared_data[tid] = data[data_row][start_in + j] * kernel[c][j];
+//		}
+//
+//		__syncthreads();
+//
+//		if (tid == 0) {
+//			for(int i = 1; i < THREADNUM ; i++)
+//				shared_data[0] += shared_data[i];
+//			out_data[data_row][start_out] = shared_data[0] + bias[c][0];
+//		}
+//	}
+//}
+//
+//
+////caculate the sum(a*x_0i)
+//extern "C" void CACU_SCALE_SUM_ROW_GPU(float_t **&data, int num, int sum_size,
+//		int kernels_num, int out_length, float_t **&kernels, float_t **&bias,
+//		float_t **&out_data) {
+//
+//	assert(out_length % kernels_num == 0);
+//
+//	_k_CACU_SCALE_SUM_ROW_GPU<<<BLOCKNUM, THREADNUM, THREADNUM * sizeof(float_t)>>>(
+//			data, num, kernels_num, sum_size, out_length, kernels, bias,
+//			out_data);
+//
+//	cudaThreadSynchronize();
+//}
+
 __global__ void _k_CACU_SCALE_SUM_ROW_GPU(float_t **data, int num,
 		int kernels_num, int sum_size, int out_length, float_t **kernel,
 		float_t **bias, float_t **out_data) {
@@ -856,6 +986,7 @@ __global__ void _k_CACU_SCALE_SUM_ROW_GPU(float_t **data, int num,
 		out_data[data_row][start_out] += bias[c][0];
 	}
 }
+
 //caculate the sum(a*x_0i)
 extern "C" void CACU_SCALE_SUM_ROW_GPU(float_t **&data, int num, int sum_size,
 		int kernels_num, int out_length, float_t **&kernels, float_t **&bias,
@@ -869,9 +1000,9 @@ extern "C" void CACU_SCALE_SUM_ROW_GPU(float_t **&data, int num, int sum_size,
 	cudaThreadSynchronize();
 }
 
-__global__ void _k_CACU_DECONV_W_GPU(float_t **data, float_t **top_diff,
-		int num, int kernel_length, int output_dim, int kernels_num,
-		float_t **out_data) {
+__global__ void _k_CACU_DECONV_W_BIN_GPU(float_t **data, float_t **top_diff,
+		float_t **a, int num, int kernel_length, int output_dim,
+		int kernels_num, float_t **out_data) {
 
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
@@ -881,6 +1012,8 @@ __global__ void _k_CACU_DECONV_W_GPU(float_t **data, float_t **top_diff,
 	int dim = output_dim * output_dim;
 
 	int data_row, data_col;
+
+	float_t crop = 1.0;
 
 	for (int i = threadid; i < kernels_num * kernel_length;
 			i += BLOCKNUM * THREADNUM) {
@@ -895,6 +1028,11 @@ __global__ void _k_CACU_DECONV_W_GPU(float_t **data, float_t **top_diff,
 				out_data[data_row][data_col] += data[n][j * kernel_length
 						+ data_col] * top_diff[n][j * kernels_num + data_row];
 			}
+		if (abs(out_data[data_row][data_col]) > 1)
+			crop = 0.0;
+		out_data[data_row][data_col] *=
+				(((float_t) (1.0 / kernel_length) + a[data_row][0] * crop)
+						* (1 - (float_t) (1.0 / kernel_length)))*kernel_length;
 	}
 }
 
@@ -902,11 +1040,11 @@ __global__ void _k_CACU_DECONV_W_GPU(float_t **data, float_t **top_diff,
 //data : bottom
 //top_diff : diffs
 //out_data : diff_ws
-extern "C" void CACU_DECONV_W_GPU(float_t **&data, float_t **&top_diff, int num,
-		int kernel_size, int kernels_num, int output_dim, int channel,
-		int stride, float_t **&out_data) {
+extern "C" void CACU_DECONV_W_BIN_GPU(float_t **&data, float_t **&top_diff,
+		float_t **a, int num, int kernel_size, int kernels_num, int output_dim,
+		int channel, int stride, float_t **&out_data) {
 
-	_k_CACU_DECONV_W_GPU<<<BLOCKNUM, THREADNUM, 0>>>(data, top_diff, num,
+	_k_CACU_DECONV_W_BIN_GPU<<<BLOCKNUM, THREADNUM, 0>>>(data, top_diff, a, num,
 			kernel_size * kernel_size * channel, output_dim, kernels_num,
 			out_data);
 
@@ -977,11 +1115,11 @@ __global__ void _k_CACU_DECONV_DIFF_GPU(float_t **data, float_t **kernel,
 
 	int threadid = bid * THREADNUM + tid;
 
-	//the set in the input feature map
+//the set in the input feature map
 	int startset_i, startset_j;
-	//the set in the output feature map
+//the set in the output feature map
 	int outset_si, outset_sj, outset_i, outset_j;
-	//the count for stride in feature map
+//the count for stride in feature map
 	int count_i, count_j;
 
 	int data_row, data_col;
@@ -1070,8 +1208,8 @@ __global__ void _k_CACU_DECONV_DIFF_COL_GPU(float_t **data, float_t **kernel,
 
 	int threadid = bid * THREADNUM + tid;
 
-	//outset is the index in output feature map
-	//blockset is the index in block
+//outset is the index in output feature map
+//blockset is the index in block
 	int outset, blockset;
 
 	int data_row, data_col;

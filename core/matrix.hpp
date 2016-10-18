@@ -239,10 +239,10 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 	int sd_out, sn_out;
 	float_t *sd_out_cp, *sn_out_cp;
 
-	int input_dim_ = input_dim + 2 * pad;
+	blob *_data = new blob(data.size(), channel*(input_dim + 2 * pad)*(input_dim + 2 * pad));
+	copy_padding_data_blob(data, input_dim, pad, _data->data);
 
-	blob *_data = new blob(data.size(), channel*input_dim_*input_dim_);
-	copy_padding_data_blob(data, input_dim, pad, _data->data);	
+	input_dim = input_dim + 2 * pad;
 
 	for (int num = 0; num < _data->data.size(); num++) {
 
@@ -252,7 +252,7 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 		//for output_dim's iteration
 		for (int i = 0; i < output_dim; i++)
 			for (int j = 0; j < output_dim; j++) {
-				sd_out = (i * input_dim_ + j) * stride * channel;
+				sd_out = (i * input_dim + j) * stride * channel;
 				sn_out = (i * output_dim + j) * channel;
 				//for channel's iteration
 				for (int c = 0; c < channel; c++) {
@@ -262,7 +262,7 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 					for (int ki = 0; ki < kernel_size; ki++)
 						for (int kj = 0; kj < kernel_size; kj++) {
 							*(sn_out_cp + ki * kernel_size + kj) = *(sd_out_cp
-								+ (ki * input_dim_ + kj) * channel);
+									+ (ki * input_dim + kj) * channel);
 						}
 				}
 			}
@@ -292,7 +292,7 @@ void img2bitcol(vector<dynamic_bitset<>> &data, int channel,int kernel_size, int
 	bin_blob *_data = new bin_blob();
 	copy_padding_data_sign(data, input_dim, pad, _data->bin_data);
 
-	int input_dim_ = input_dim + 2 * pad;
+	input_dim = input_dim + 2 * pad;
 
 	int count = 0, motif = kernel_size * kernel_size * channel, index;
 	int flag = BIN_SIZE - 1, end_flag = motif - 1;
@@ -304,7 +304,7 @@ void img2bitcol(vector<dynamic_bitset<>> &data, int channel,int kernel_size, int
 		//for output_dim's iteration
 		for (int i = 0; i < output_dim; i++)
 			for (int j = 0; j < output_dim; j++) {
-				sd_out = (i * input_dim_ + j) * stride;
+				sd_out = (i * input_dim + j) * stride;
 				sn_out = i * output_dim + j;
 				//to unlong
 				count = 0;
@@ -316,7 +316,7 @@ void img2bitcol(vector<dynamic_bitset<>> &data, int channel,int kernel_size, int
 						for (int kj = 0; kj < kernel_size; kj++) {
 							index = count % BIN_SIZE;
 							sbp[index] = sdp[sd_out_c
-								+ (ki * input_dim_ + kj) * channel];
+									+ (ki * input_dim + kj) * channel];
 							if (index == flag || count == end_flag) {
 								*snp = sbp.to_ulong();
 								sbp.reset();
@@ -340,10 +340,10 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 	int sd_out;
 	float_t *sd_out_cp, *sn_out_cp;
 
-	int input_dim_ = input_dim + 2 * pad;
-
-	blob *_data = new blob(data.size(), channel*input_dim_*input_dim_);
+	blob *_data = new blob(data.size(), channel*(input_dim + 2 * pad)*(input_dim + 2 * pad));
 	copy_padding_data_blob(data, input_dim, pad, _data->data);
+
+	input_dim = input_dim + 2 * pad;
 
 	for (int num = 0; num < _data->data.size(); num++) {
 
@@ -353,7 +353,7 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 		for (int i = 0; i < output_dim; i++)
 			for (int j = 0; j < output_dim; j++) {
 				snp = &out_data[num][i * output_dim + j][0];
-				sd_out = (i * input_dim_ + j) * stride;
+				sd_out = (i * input_dim + j) * stride;
 				//for channel's iteration
 				for (int c = 0; c < channel; c++) {
 					sd_out_cp = sdp + sd_out * channel + c;
@@ -362,7 +362,7 @@ void img2col(vector<vec_t> &data, int kernel_size, int stride, int pad,
 					for (int ki = 0; ki < kernel_size; ki++)
 						for (int kj = 0; kj < kernel_size; kj++) {
 							*(sn_out_cp + ki * kernel_size + kj) = *(sd_out_cp
-								+ (ki * input_dim_ + kj) * channel);
+									+ (ki * input_dim + kj) * channel);
 						}
 				}
 			}

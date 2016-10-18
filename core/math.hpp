@@ -37,6 +37,9 @@ namespace mycnn {
 extern "C" void CACU_SUM_SIZE_GPU(float_t **&data, int num, int sum_size,
 		int length, int out_length, float_t **&out_data);
 
+extern "C" void CACU_MEAN_GPU(float_t **&data, int num, int length,
+		float_t **&out_data);
+
 //vec_t(size) -> vec_t(size/sum_size)
 extern "C" void CACU_SUM_SIZE_ABS_GPU(float_t **&data, int num, int sum_size,
 		int length, int out_length, float_t **&out_data);
@@ -110,6 +113,9 @@ extern "C" void CACU_SUM_GPU_R(float_t **&data, float_t **&bias, int num,
 extern "C" void CACU_SUB_GPU(float_t **&data, float_t *&bias, int num,
 		int length, int channel, float_t **&out_data);
 
+extern "C" void CACU_SUB_GPU_D(float_t **&data, float_t **&bias, int num,
+		int length, float_t **&out_data);
+
 //nums of vec_t(size) -> vec_t(size/sum_size)
 //caculate the division for batch_size
 extern "C" void CACU_DIVISION_GPU(float_t **&data, float_t *&scale, int num,
@@ -142,7 +148,7 @@ extern "C" void CACU_SCALE_SUM_ROW_GPU(float_t **&data, int num, int sum_size,
 //data : bottom
 //top_diff : diffs
 //out_data : diff_ws
-extern "C" void CACU_DECONV_W_GPU(float_t **&data, float_t **&top_diff, int num,
+extern "C" void CACU_DECONV_W_BIN_GPU(float_t **&data, float_t **&top_diff, float_t **a,int num,
 		int kernel_size, int kernels_num, int output_dim, int channel,
 		int stride, float_t **&out_data);
 
@@ -619,6 +625,29 @@ void CACU_SUB_CPU(vector<vec_t> &data, vec_t &bias, int channel,
 }
 
 //nums of vec_t(size) -> vec_t(size/sum_size)
+//caculate the subtraction for batch_size
+void CACU_SUB_CPU(vector<vec_t> &data, vector<vec_t> &bias,
+		vector<vec_t> &out_data) {
+	assert(data.size() > 0 && out_data.size() > 0);
+	assert(data.size() == out_data.size());
+
+	float_t *sp, *snp, *ssp;
+
+	int dim = data[0].size();
+
+	for (int num = 0; num < data.size(); num++) {
+		//iteration for channel
+		ssp = &bias[num][0];
+		//iteration for feature map
+		for (int f = 0; f < dim; f++) {
+			sp = &data[num][0] + f;
+			snp = &out_data[num][0] + f;
+			*snp = (*sp - (*ssp));
+		}
+	}
+}
+
+//nums of vec_t(size) -> vec_t(size/sum_size)
 //caculate the division for batch_size
 void CACU_DIVISION_CPU(vector<vec_t> &data, vec_t &scale, int channel,
 		vector<vec_t> &out_data) {
@@ -960,7 +989,7 @@ void CACU_DECONV_W_CPU(vec_t &data, vec_t &top_diff, int kernel_size,
 //data : bottom
 //top_diff : diffs
 //out_data : diff_ws
-void CACU_DECONV_W_CPU(vec_t &data, vec_t &top_diff, int kernel_size,
+void CACU_DECONV_W_BIN_CPU(vec_t &data, vec_t &top_diff, int kernel_size,
 		int input_dim, int pad, int channel, int stride,
 		vector<vec_t> &out_data) {
 	assert(data.size() > 0 && out_data.size() > 0 && top_diff.size() > 0);
@@ -982,6 +1011,8 @@ void CACU_DECONV_W_CPU(vec_t &data, vec_t &top_diff, int kernel_size,
 	sdp = &data[0];
 	sfp = &top_diff[0];
 
+	float_t crop = 1.0;
+
 	//for output_dim's iteration
 	for (int i = 0; i < output_dim; i++) {
 		for (int j = 0; j < output_dim; j++) {
@@ -996,6 +1027,30 @@ void CACU_DECONV_W_CPU(vec_t &data, vec_t &top_diff, int kernel_size,
 					*(snp + index) += *(sdp + sd_out + index) * (*sf_out_cp);
 				}
 			}
+		}
+	}
+}
+
+void CACU_FIX_GRADIENT_CPU(vector<vec_t> &data, vector<vec_t> &a) {
+	assert(data.size() > 0 && a.size() > 0);
+	assert(data.size() == a.size());
+
+	float_t *sdp, *sap;
+
+	int kernel_length = data[0].size();
+
+	float_t crop = 1.0;
+
+	for (int c = 0; c < data.size(); c++) {
+
+		sap = &a[c][0];
+		sdp = &data[c][0];
+
+		for (int index = 0; index < kernel_length; index++) {
+			if (abs(*(sdp + index)) > 1)
+				crop = 0.0;
+			*(sdp + index) *= ((float_t) (1.0 / kernel_length) + crop * (*sap))
+					* (1.0 - (float_t) (1.0 / kernel_length)) * kernel_length;
 		}
 	}
 }

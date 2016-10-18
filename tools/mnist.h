@@ -186,10 +186,7 @@ void train_test() {
 			net->save(oss.str().c_str());
 		}
 	}
-	vector<vec_t>().swap(input_data);
-	vector<vec_t>().swap(labels);
-	vector<vec_t>().swap(test_data);
-	vector<vec_t>().swap(test_labels);
+
 }
 
 #else
@@ -198,7 +195,7 @@ void train_test() {
 
 	network *net = mnist_test();
 
-	blob * input_data = new blob();
+	blob *input_data = new blob();
 	blob * labels = new blob();
 	blob * test_data = new blob();
 	blob * test_labels = new blob();
@@ -260,6 +257,7 @@ void train_test() {
 	delete labels;
 	delete test_data;
 	delete test_labels;
+	delete net;
 }
 
 void test_data() {
@@ -323,6 +321,7 @@ void test_data() {
 	delete labels;
 	delete test_data;
 	delete test_labels;
+	delete net;
 }
 
 #endif

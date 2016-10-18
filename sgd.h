@@ -91,9 +91,6 @@ public:
 		net->set_iter(iter);
 		net->set_phrase(type::train);
 
-		if (iter % STEP_SIZE == 0)
-			lr = lr * (float_t) 0.1;
-
 		net->reset_data_space();
 
 		reset_sgd_space();
@@ -120,7 +117,11 @@ public:
 
 		end = clock();
 
-		printf("%d/iter ms  lr : %f\n", (end - _start) / 1000, lr);
+		printf("%d/iter ms  lr : %f\n", (end - _start) / 1000, this->lr);
+
+		if (iter % STEP_SIZE == STEP_SIZE-1) {
+			this->lr = this->lr * 0.1;
+		}
 	}
 
 	network *net;
@@ -159,9 +160,9 @@ private:
 					++_it) {
 				char_t param_name = _it->first;
 				if (param_name == "w" )
-				local_rate = lr * net->net_[layer_name]->lr_w;
+				local_rate = this->lr * net->net_[layer_name]->lr_w;
 				else
-				local_rate = lr * net->net_[layer_name]->lr_b;
+				local_rate = this->lr * net->net_[layer_name]->lr_b;
 //
 //				vec_t test_data(1);
 //
@@ -182,7 +183,7 @@ private:
 						data_acc_v[layer_name]->data[param_name],(float_t)1,data_acc_v[layer_name]->data[param_name]);
 
 				if (param_name == "real_w")
-				CACU_AXBY_CROP_GPU(net->net_[layer_name]->params->data[param_name],(float_t)1.0,data_acc_v[layer_name]->param_outnum[param_name],
+				CACU_AXBY_GPU(net->net_[layer_name]->params->data[param_name],(float_t)1.0,data_acc_v[layer_name]->param_outnum[param_name],
 						data_acc_v[layer_name]->param_dim[param_name],data_acc_v[layer_name]->data[param_name],(float_t)(-1.0),net->net_[layer_name]->params->data[param_name]);
 				else
 				CACU_AXBY_GPU(net->net_[layer_name]->params->data[param_name],(float_t)1.0,data_acc_v[layer_name]->param_outnum[param_name],

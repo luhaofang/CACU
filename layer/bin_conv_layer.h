@@ -98,7 +98,7 @@ public:
 		img2col_gpu(storage_data->data["pad_data"], bottoms[1]->num, channel,
 				input_dim+2*pad, kernel_size, stride, output_dim,storage_data->data["col_data"]);
 
-		CACU_DECONV_W_GPU(storage_data->data["col_data"], tops[0]->diff,tops[0]->num, kernel_size, output_channel, output_dim, channel,stride, v->data["real_w"]);
+		CACU_DECONV_W_BIN_GPU(storage_data->data["col_data"], tops[0]->diff,params->data["a"],tops[0]->num,  kernel_size, output_channel, output_dim, channel,stride, v->data["real_w"]);
 
 		reset_data_gpu( storage_data->data["col_data"],bottoms[0]->num,(output_dim*kernel_size)*(output_dim * kernel_size)*channel);
 
@@ -206,7 +206,8 @@ public:
 	}
 
 	virtual const void setup() override {
-
+		if(train == phrase)
+		means = new blob(output_channel,1,1);
 	}
 
 	virtual const int caculate_data_space() override {
@@ -267,8 +268,10 @@ public:
 
 		for (int num = 0; num < bottoms[1]->data.size(); num++) {
 
-			CACU_DECONV_W_CPU(storage_data->data["col_data"][num], tops[0]->diff[num], kernel_size, input_dim, pad, channel, stride, v->data["real_w"]);
+			CACU_DECONV_W_BIN_CPU(storage_data->data["col_data"][num], tops[0]->diff[num], kernel_size, input_dim, pad, channel, stride, v->data["real_w"]);
 		}
+
+		CACU_FIX_GRADIENT_CPU(v->data["real_w"],params->data["a"]);
 
 		CACU_RESET_CPU(storage_data->data["col_data"]);
 
@@ -349,6 +352,8 @@ public:
 
 	virtual const void setup() override {
 
+		if(train == phrase)
+		means = new blob(output_channel,1,1);
 	}
 
 	virtual const int caculate_data_space() override {
@@ -483,17 +488,22 @@ public:
 	}
 
 	~bin_conv_layer() {
-
+		delete means;
 	}
 
 private:
 
 	int block_size;
+	blob *means;
 
 #if GPU_MODE
 
 	void resigned_weights()
 	{
+		//mean center
+		CACU_MEAN_GPU(params->data["real_w"],output_channel,channel*kernel_size*kernel_size,means->data);
+
+		CACU_SUB_GPU_D(params->data["real_w"],means->data,output_channel,channel*kernel_size*kernel_size,params->data["real_w"]);
 
 		BIT_CACU_SIGN_W_GPU(params->data["real_w"], params->bin_data["w"],output_channel, kernel_size*kernel_size*channel);
 
@@ -509,6 +519,18 @@ private:
 #else
 
 	void resigned_weights() {
+
+		//mean center
+		for (int i = 0; i < output_channel; i++) {
+			CACU_SUM_SIZE_CPU(params->data["real_w"][i],
+					channel * kernel_size * kernel_size, means->data[i]);
+
+			CACU_SCALE_CPU(means->data[i],(float_t) (1.0 / channel * kernel_size * kernel_size),	means->data[i],0);
+		}
+
+		CACU_SUB_CPU(params->data["real_w"], means->data,
+				params->data["real_w"]);
+
 		BIT_CACU_SIGN_W(params->data["real_w"], params->bin_data["w"]);
 
 		for (int num = 0; num < output_channel; num++) {

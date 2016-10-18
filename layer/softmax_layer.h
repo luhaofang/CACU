@@ -168,17 +168,17 @@ public:
 				loss -= log(tops[0]->data[num][label]);
 			}
 			loss = loss / (float_t)bottoms[0]->data.size();
-			printf("iter_%d 	loss:%f\n", iter, loss);
-			/*printf("==============================\n");
-			printf("loss:%.10f\n", loss);
-			printf("==============================\n");
 
-			os << loss << "\n";
-			if (BATCH_SIZE >=3 )
-			printf("sample1_%d:%.10f,sample2_%d:%.10f,sample3_%d:%.10f\n", (int)bottoms[1]->data[0][0], tops[0]->data[0][(int)bottoms[1]->data[0][0]], (int)bottoms[1]->data[1][0], tops[0]->data[1][(int)bottoms[1]->data[1][0]], (int)bottoms[1]->data[2][0], tops[0]->data[2][(int)bottoms[1]->data[2][0]]);
-			else
-			printf("sample1_%d:%.10f\n", (int)bottoms[1]->data[0][0], tops[0]->data[0][(int)bottoms[1]->data[0][0]]);
-			*/
+			printf("iter_%d 	loss:%f\n",iter, loss);
+//			printf("==============================\n");
+//			printf("loss:%.10f\n", loss);
+//			printf("==============================\n");
+//
+//			os << loss << "\n";
+//			if (BATCH_SIZE >=3 )
+//			printf("sample1_%d:%.10f,sample2_%d:%.10f,sample3_%d:%.10f\n", (int)bottoms[1]->data[0][0], tops[0]->data[0][(int)bottoms[1]->data[0][0]], (int)bottoms[1]->data[1][0], tops[0]->data[1][(int)bottoms[1]->data[1][0]], (int)bottoms[1]->data[2][0], tops[0]->data[2][(int)bottoms[1]->data[2][0]]);
+//			else
+//			printf("sample1_%d:%.10f\n", (int)bottoms[1]->data[0][0], tops[0]->data[0][(int)bottoms[1]->data[0][0]]);
 		}
 	}
 

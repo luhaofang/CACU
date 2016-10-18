@@ -13,8 +13,8 @@ int main() {
 
 	//testim2col();
 	//calculate_mean_channel();
-	train_test();
+	//train_test();
 
-	//test_data();
+	test_data();
 
 }
