@@ -183,7 +183,7 @@ private:
 						data_acc_v[layer_name]->data[param_name],(float_t)1,data_acc_v[layer_name]->data[param_name]);
 
 				if (param_name == "real_w")
-				CACU_AXBY_GPU(net->net_[layer_name]->params->data[param_name],(float_t)1.0,data_acc_v[layer_name]->param_outnum[param_name],
+				CACU_AXBY_GPU_CROP(net->net_[layer_name]->params->data[param_name],(float_t)1.0,data_acc_v[layer_name]->param_outnum[param_name],
 						data_acc_v[layer_name]->param_dim[param_name],data_acc_v[layer_name]->data[param_name],(float_t)(-1.0),net->net_[layer_name]->params->data[param_name]);
 				else
 				CACU_AXBY_GPU(net->net_[layer_name]->params->data[param_name],(float_t)1.0,data_acc_v[layer_name]->param_outnum[param_name],

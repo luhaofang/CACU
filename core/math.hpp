@@ -1050,7 +1050,7 @@ void CACU_FIX_GRADIENT_CPU(vector<vec_t> &data, vector<vec_t> &a) {
 			if (abs(*(sdp + index)) > 1)
 				crop = 0.0;
 			*(sdp + index) *= ((float_t) (1.0 / kernel_length) + crop * (*sap))
-					* (1.0 - (float_t) (1.0 / kernel_length)) * kernel_length;
+				* ((float_t)kernel_length - 1.0);
 		}
 	}
 }

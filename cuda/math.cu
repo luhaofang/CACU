@@ -1028,11 +1028,11 @@ __global__ void _k_CACU_DECONV_W_BIN_GPU(float_t **data, float_t **top_diff,
 				out_data[data_row][data_col] += data[n][j * kernel_length
 						+ data_col] * top_diff[n][j * kernels_num + data_row];
 			}
-		//if (abs(out_data[data_row][data_col]) > 1)
-		//	crop = 0.0;
-		//out_data[data_row][data_col] *=
-		//		(((float_t) (1.0 / kernel_length) + a[data_row][0] * crop)
-		//				* (1 - (float_t) (1.0 / kernel_length)))*kernel_length;
+		if (abs(out_data[data_row][data_col]) > 1)
+			crop = 0.0;
+		out_data[data_row][data_col] *=
+			(((float_t) (1.0 / kernel_length) + a[data_row][0] * crop)
+						* ((float_t)kernel_length - 1.0));
 	}
 }
 

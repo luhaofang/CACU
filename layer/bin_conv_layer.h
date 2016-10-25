@@ -501,10 +501,10 @@ private:
 	void resigned_weights()
 	{
 		//mean center
-		/*CACU_MEAN_GPU(params->data["real_w"],output_channel,channel*kernel_size*kernel_size,means->data);
+		CACU_MEAN_GPU(params->data["real_w"],output_channel,channel*kernel_size*kernel_size,means->data);
 
 		CACU_SUB_GPU_D(params->data["real_w"],means->data,output_channel,channel*kernel_size*kernel_size,params->data["real_w"]);
-*/
+
 		BIT_CACU_SIGN_W_GPU(params->data["real_w"], params->bin_data["w"],output_channel, kernel_size*kernel_size*channel);
 
 		CACU_SUM_SIZE_ABS_GPU(params->data["real_w"],output_channel,
@@ -521,15 +521,15 @@ private:
 	void resigned_weights() {
 
 		//mean center
-		//for (int i = 0; i < output_channel; i++) {
-		/*	CACU_SUM_SIZE_CPU(params->data["real_w"][i],
+		for (int i = 0; i < output_channel; i++) {
+			CACU_SUM_SIZE_CPU(params->data["real_w"][i],
 					channel * kernel_size * kernel_size, means->data[i]);
 
 			CACU_SCALE_CPU(means->data[i],(float_t) (1.0 / channel * kernel_size * kernel_size),	means->data[i],0);
 		}
 
 		CACU_SUB_CPU(params->data["real_w"], means->data,
-				params->data["real_w"]);*/
+				params->data["real_w"]);
 
 		BIT_CACU_SIGN_W(params->data["real_w"], params->bin_data["w"]);
 
