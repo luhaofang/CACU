@@ -189,6 +189,12 @@ extern "C" void CACU_ACTIVATION_RELU_GPU(float_t **&data, int num, int length);
 extern "C" void CACU_DE_ACTIVATION_RELU_GPU(float_t **&data, int num,
 		int length, float_t **&out_data);
 
+extern "C" void CACU_ACTIVATION_LEAKY_RELU_GPU(float_t **&data, int num,
+		int length, float_t slope) ;
+
+extern "C" void CACU_DE_ACTIVATION_LEAKY_RELU_GPU(float_t **&data, int num,
+		int length, float_t slope, float_t **&out_data) ;
+
 extern "C" void CACU_ACTIVATION_SIGMOID_GPU(float_t **&data, int num,
 		int length);
 
@@ -1049,8 +1055,8 @@ void CACU_FIX_GRADIENT_CPU(vector<vec_t> &data, vector<vec_t> &a) {
 		for (int index = 0; index < kernel_length; index++) {
 			if (abs(*(sdp + index)) > 1)
 				crop = 0.0;
-			*(sdp + index) *= ((float_t) (1.0 / kernel_length) + crop * (*sap))
-				* ((float_t)kernel_length - 1.0);
+			*(sdp + index) *= ((float_t) (1.0 / kernel_length) + crop * (*sap)) * (float_t)kernel_length;
+					//* ((float_t)kernel_length - (float_t) (1.0)) ;
 		}
 	}
 }
@@ -1122,6 +1128,40 @@ void CACU_DE_ACTIVATION_RELU_CPU(vector<vec_t> &data, vector<vec_t> &out_data) {
 		for (int i = 0; i < length; i++) {
 
 			*(snp + i) = relu_.df(*(sp + i)) * (*(snp + i));
+		}
+	}
+}
+
+//activation caculation
+void CACU_ACTIVATION_LEAKY_RELU_CPU(vector<vec_t> &data,float_t slope) {
+	float_t *sp;
+	activation::relu relu_;
+	int index = 0;
+	int length = data[0].size();
+
+	for (int num = 0; num < data.size(); num++) {
+		sp = &data[num][0];
+		for (int i = 0; i < length; i++) {
+			*(sp + i) = (*(sp + i) >= 0 ? *(sp + i) : *(sp + i) * slope);
+		}
+	}
+}
+
+//activation gradient caculation
+void CACU_DE_ACTIVATION_LEAKY_RELU_CPU(vector<vec_t> &data,float_t slope, vector<vec_t> &out_data) {
+	float_t *sp, *snp;
+	activation::relu relu_;
+	int index = 0;
+	int length = data[0].size();
+
+	float_t sign;
+
+	for (int num = 0; num < data.size(); num++) {
+		sp = &data[num][0];
+		snp = &out_data[num][0];
+		for (int i = 0; i < length; i++) {
+			sign = *(sp + i) >= 0 ? 1: slope;
+			*(snp + i) = sign * (*(snp + i));
 		}
 	}
 }

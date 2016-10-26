@@ -82,15 +82,12 @@ __global__ void _k_CACU_MEAN_GPU(float_t **data, int num, int length,
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
 
-	int threadid = bid * THREADNUM + tid;
-
-	int data_row, data_col;
+	int data_row;
 
 	extern __shared__ float_t shared_data[];
 
 	for (int i = bid; i < num; i += BLOCKNUM) {
 		data_row = i;
-		data_col = 0;
 
 		shared_data[tid] = 0;
 
@@ -1031,8 +1028,8 @@ __global__ void _k_CACU_DECONV_W_BIN_GPU(float_t **data, float_t **top_diff,
 		if (abs(out_data[data_row][data_col]) > 1)
 			crop = 0.0;
 		out_data[data_row][data_col] *=
-			(((float_t) (1.0 / kernel_length) + a[data_row][0] * crop)
-						* ((float_t)kernel_length - 1.0));
+				(((float_t) (1.0 / kernel_length) + a[data_row][0] * crop)
+		* ((float_t)kernel_length - (float_t) (1.0)));
 	}
 }
 
@@ -1276,6 +1273,39 @@ extern "C" void CACU_ACTIVATION_RELU_GPU(float_t **&data, int num, int length) {
 
 }
 
+__global__ void _k_CACU_ACTIVATION_LEAKY_RELU_GPU(float_t **data, int num,
+		int length, float_t slope) {
+
+	int tid = threadIdx.x;
+	int bid = blockIdx.x;
+
+	int threadid = bid * THREADNUM + tid;
+
+	int data_row, data_col;
+
+	for (int i = threadid; i < num * length; i += BLOCKNUM * THREADNUM) {
+
+		data_row = i / length;
+		data_col = i % length;
+
+		data[data_row][data_col] =
+				0 <= data[data_row][data_col] ?
+						data[data_row][data_col] :
+						data[data_row][data_col] * slope;
+
+	}
+}
+
+extern "C" void CACU_ACTIVATION_LEAKY_RELU_GPU(float_t **&data, int num,
+		int length, float_t slope) {
+
+	_k_CACU_ACTIVATION_LEAKY_RELU_GPU<<<BLOCKNUM, THREADNUM, 0>>>(data, num,
+			length, slope);
+
+	cudaThreadSynchronize();
+
+}
+
 __global__ void _k_CACU_DE_ACTIVATION_RELU_GPU(float_t **data, int num,
 		int length, float_t **out_data) {
 
@@ -1303,6 +1333,37 @@ extern "C" void CACU_DE_ACTIVATION_RELU_GPU(float_t **&data, int num,
 
 	_k_CACU_DE_ACTIVATION_RELU_GPU<<<BLOCKNUM, THREADNUM, 0>>>(data, num,
 			length, out_data);
+
+	cudaThreadSynchronize();
+}
+
+__global__ void _k_CACU_DE_ACTIVATION_LEAKY_RELU_GPU(float_t **data, int num,
+		int length, float_t slope, float_t **out_data) {
+
+	int tid = threadIdx.x;
+	int bid = blockIdx.x;
+
+	int threadid = bid * THREADNUM + tid;
+
+	float_t sign;
+
+	int data_row, data_col;
+
+	for (int i = threadid; i < num * length; i += BLOCKNUM * THREADNUM) {
+
+		data_row = i / length;
+		data_col = i % length;
+
+		sign = data[data_row][data_col] > 0 ? (float_t) 1 : slope;
+		out_data[data_row][data_col] = sign * out_data[data_row][data_col];
+	}
+}
+
+extern "C" void CACU_DE_ACTIVATION_LEAKY_RELU_GPU(float_t **&data, int num,
+		int length, float_t slope, float_t **&out_data) {
+
+	_k_CACU_DE_ACTIVATION_LEAKY_RELU_GPU<<<BLOCKNUM, THREADNUM, 0>>>(data, num,
+			length, slope, out_data);
 
 	cudaThreadSynchronize();
 }
