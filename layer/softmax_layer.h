@@ -57,7 +57,7 @@ public:
 		INIT_STORAGE_DATA();
 
 		if (train == this->phrase) {
-			os.open("/home/seal/dataset/experiment/cifar10/loss_bin.txt");
+			os.open("/home/seal/dataset/experiment/cifar10/loss.txt");
 			os.precision(std::numeric_limits<float_t>::digits10);
 		}
 	}
@@ -87,10 +87,11 @@ public:
 
 			loss = loss / (float_t)bottoms[0]->num;
 
+			os << loss << "\n" << flush;
+
 			printf("iter_%d 	loss:%f\n",iter, loss);
 
 		}
-		//os << loss << "\n";
 	}
 
 	virtual const void backward(layer_param *&v) override

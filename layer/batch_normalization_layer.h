@@ -157,7 +157,7 @@ public:
 //				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
 //		CHECK(res);
 //		printf("%s:%f,","smean",test_data[0]);
-//
+////
 //		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["svar"]),
 //				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
 //		CHECK(res);
@@ -421,7 +421,7 @@ public:
 				CACU_SUM_CPU(tops[0]->data, params->data["shift"][0], channel, tops[0]->data);
 			}
 		}
-		printf("bn: %s smean:%f,svar:%f,mean:%f,std:%f\n", layer_name.c_str(), storage_data->data["smean"][0][0], storage_data->data["svar"][0][0], storage_data->data["mean"][0][0], storage_data->data["var"][0][0]);
+		//printf("bn: %s smean:%f,svar:%f,mean:%f,std:%f\n", layer_name.c_str(), storage_data->data["smean"][0][0], storage_data->data["svar"][0][0], storage_data->data["mean"][0][0], storage_data->data["var"][0][0]);
 
 	}
 

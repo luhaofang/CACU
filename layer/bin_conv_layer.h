@@ -271,7 +271,7 @@ public:
 			CACU_DECONV_W_BIN_CPU(storage_data->data["col_data"][num], tops[0]->diff[num], kernel_size, input_dim, pad, channel, stride, v->data["real_w"]);
 		}
 
-		CACU_FIX_GRADIENT_CPU(v->data["real_w"],params->data["a"]);
+		//CACU_FIX_GRADIENT_CPU(v->data["real_w"],params->data["a"]);
 
 		CACU_RESET_CPU(storage_data->data["col_data"]);
 
@@ -521,15 +521,15 @@ private:
 	void resigned_weights() {
 
 		//mean center
-		for (int i = 0; i < output_channel; i++) {
-			CACU_SUM_SIZE_CPU(params->data["real_w"][i],
-					channel * kernel_size * kernel_size, means->data[i]);
-
-			CACU_SCALE_CPU(means->data[i],(float_t) (1.0 / channel * kernel_size * kernel_size),	means->data[i],0);
-		}
-
-		CACU_SUB_CPU(params->data["real_w"], means->data,
-				params->data["real_w"]);
+//		for (int i = 0; i < output_channel; i++) {
+//			CACU_SUM_SIZE_CPU(params->data["real_w"][i],
+//					channel * kernel_size * kernel_size, means->data[i]);
+//
+//			CACU_SCALE_CPU(means->data[i],(float_t) (1.0 / channel * kernel_size * kernel_size),	means->data[i],0);
+//		}
+//
+//		CACU_SUB_CPU(params->data["real_w"], means->data,
+//				params->data["real_w"]);
 
 		BIT_CACU_SIGN_W(params->data["real_w"], params->bin_data["w"]);
 

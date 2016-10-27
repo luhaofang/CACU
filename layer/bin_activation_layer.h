@@ -100,7 +100,7 @@ public:
 		sum_pad_k = new blob(bottoms[0]->num, 1, input_dim+2*pad);
 		ks = new blob(bottoms[0]->num, 1, output_dim*kernel_size);
 		if(train == phrase)
-		df = new blob(BATCH_SIZE, output_channel, input_dim);
+		df = new blob(bottoms[0]->num, output_channel, input_dim);
 	}
 
 	virtual const int caculate_data_space() override {

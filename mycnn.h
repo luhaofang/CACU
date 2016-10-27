@@ -45,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "layer/batch_normalization_layer.h"
 #include "layer/softmax_layer.h"
 #include "layer/relu_layer.h"
+#include "layer/leaky_relu_layer.h"
 #include "layer/inner_product_layer.h"
 #include "layer/conv_layer.h"
 #include "layer/sigmoid_layer.h"

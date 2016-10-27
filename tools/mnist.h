@@ -168,15 +168,16 @@ void train_test() {
 
 			net->predict();
 
-		}
+		} else {
 
-		getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, input_data,
+			getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, input_data,
 					net->net_[net->layers[0]]->bottoms[0]->s_data);
 
-		getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, labels,
+			getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, labels,
 					net->net_["softmax"]->bottoms[1]->s_data);
 
-		s.train(i);		
+			s.train(i);
+		}
 
 		if (i % SNAPSHOT == 0) {
 			ostringstream oss;
@@ -234,13 +235,15 @@ void train_test() {
 			net->predict();
 		}
 
-		getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, input_data->data,
+		else {
+			getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, input_data->data,
 					net->net_[net->layers[0]]->bottoms[0]->data);
 
-		getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, labels->data,
+			getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, labels->data,
 					net->net_["softmax"]->bottoms[1]->data);
 
-		s.train(i);		
+			s.train(i);
+		}
 
 		if (i % SNAPSHOT == 0) {
 			ostringstream oss;

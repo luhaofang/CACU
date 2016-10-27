@@ -29,106 +29,36 @@
 
 namespace mycnn {
 
-class accuracy_layer: public layer {
+class leaky_relu_layer: public layer {
 
 public:
 
-	accuracy_layer(char_t layer_name, int input_dim, type phrase, float_t lr_w =
-			1.0, float_t lr_b = 1.0) :
-			layer(layer_name, input_dim, phrase, lr_w, lr_b) {
+	leaky_relu_layer(char_t layer_name, int input_dim, int channel, type phrase,
+			float_t lr_w = 1.0, float_t lr_b = 1.0) :
+			layer(layer_name, input_dim, channel, phrase, lr_w, lr_b) {
 		this->layer_name = layer_name;
-		this->output_dim = input_dim;
-		this->input_dim = input_dim;
 		this->phrase = phrase;
-		this->channel = 1;
-		this->kernel_size = 0;
-		this->output_channel = 1;
-		this->pad = 0;
-		this->stride = 0;
-		this->set_lr_w(lr_w);
-		this->set_lr_b(lr_b);
+		this->channel = channel;
+		this->input_dim = input_dim;
 		INIT_SPACE_DATA();
 		INIT_PARAM_SAPCE_DATA();
 		INIT_STORAGE_DATA();
-
-		os.open("/home/seal/dataset/experiment/cifar10/test_accuary.txt");
-		os.precision(std::numeric_limits<float_t>::digits10);
-
 	}
 
 #if GPU_MODE
 
 	virtual const void forward() override
 	{
-		if (test == this->phrase)
-		{
+		if (train == phrase)
+		copy_data_gpu(bottoms[0]->data, storage_data->data["data"], bottoms[0]->num, input_dim*input_dim*channel, 0);
 
-			cudaError_t res;
+		CACU_ACTIVATION_LEAKY_RELU_GPU(bottoms[0]->data,bottoms[0]->num,input_dim*input_dim*channel,slope);
 
-			CACU_SOFTMAX_GPU(bottoms[0]->data, bottoms[0]->num, input_dim, tops[0]->data);
-
-			vec_t predict_data(bottoms[0]->num*input_dim);
-
-			res = cudaMemcpy((void*) (&predict_data[0]), (void*) (tops[0]->s_data),
-					bottoms[0]->num * input_dim * sizeof(float_t), cudaMemcpyDeviceToHost);
-//			printf("acc_layer:");
-//			for(int i =0; i < predict_data.size();i++)
-//			printf("%.10f,",predict_data[i]);
-//			printf("\n");
-
-			int index = 0;
-
-			int label;
-
-			int size = input_dim;
-
-			float_t loss = 0.0;
-
-			float_t *cuda_loss;
-			res = cudaMalloc((void**) (&cuda_loss), sizeof(float_t));
-			CHECK(res);
-
-			CACU_CE_LOSS_GPU(tops[0]->data, bottoms[1]->data, bottoms[0]->num, cuda_loss);
-
-			res = cudaMemcpy((void*) (&loss), (void*) (cuda_loss), sizeof(float_t), cudaMemcpyDeviceToHost);
-			CHECK(res);
-
-			loss = loss / (float_t)bottoms[0]->num;
-
-			//for test code
-			vec_t predict_labels(bottoms[1]->num);
-
-			res = cudaMemcpy((void*) (&predict_labels[0]), (void*) (bottoms[1]->s_data),
-					bottoms[1]->num * sizeof(float_t), cudaMemcpyDeviceToHost);
-			CHECK(res);
-			float_t sum = 0;
-
-			float_t max_ = 0;
-
-			for(int i = 0; i < bottoms[1]->num;i++) {
-				max_= 0;
-				for (int j = 0; j < size; j++) {
-					if (predict_data[i*input_dim + j] > max_) {
-						max_ = predict_data[i*input_dim + j];
-						index = j;
-					}
-				}
-				if (index == (int)predict_labels[i])
-				sum += 1.0;
-			}
-
-			printf("==============================\n");
-			printf("test accuracy: %f\n", sum / bottoms[0]->num);
-			os << sum / bottoms[0]->num << "\n" << flush;
-
-			printf("loss:%f\n", loss);
-			printf("==============================\n");
-		}
 	}
 
 	virtual const void backward(layer_param *&v) override
 	{
-
+		CACU_DE_ACTIVATION_LEAKY_RELU_GPU(storage_data->data["data"],bottoms[0]->num, input_dim*input_dim*channel,slope, bottoms[0]->diff);
 	}
 
 	virtual const void save(std::ostream& os) override {
@@ -145,82 +75,29 @@ public:
 
 	virtual const int caculate_data_space() override {
 
-		printf("%s top costs : %d \n", layer_name.c_str(), 0);
+		int sum = 0;
 
 		printf("%s params costs %d \n", layer_name.c_str(), params->caculate_space());
 
-		return 0;
+		sum += params->caculate_space();
+		sum += storage_data->caculate_space();
+		return sum;
 	}
 
 #else
 
 	virtual const void forward() override
 	{
-		if (test == this->phrase) {
+		if (train == phrase)
+		copy_data(bottoms[0]->data, storage_data->data["data"], 0);
 
-			blob data(bottoms[0]->data.size(), bottoms[0]->data[0].size(), test);
-
-			int size = bottoms[0]->data[0].size();
-
-			float_t *sp, max_, *p, sum;
-			for (int num = 0; num < bottoms[0]->data.size(); num++)
-			{
-				sp = &data.data[num][0];
-				max_ = bottoms[0]->data[num][0];
-				p = &bottoms[0]->data[num][0];
-				sum = 0.0;
-				for (int i = 0; i < size; i++)
-				max_ = max(*(p + i), max_);
-				for (int i = 0; i < size; i++)
-				{
-					*(sp + i) = exp(*(p + i) - max_);
-					sum += *(sp + i);
-				}
-				for (int i = 0; i < size; i++)
-				{
-					*(sp + i) = (*(sp + i) / sum);
-				}
-			}
-
-			float_t index = 0;
-
-			int label;
-
-			sum = 0.0;
-			for (int num = 0; num < data.data.size(); num++)
-			{
-				max_ = data.data[num][0];
-				index = 0;
-				for (int i = 0; i < size; i++) {
-					if (*(&data.data[num][0] + i) > max_) {
-						max_ = *(&data.data[num][0] + i);
-						index = (float_t)i;
-					}
-				}
-				if (index == bottoms[1]->data[num][0])
-				sum += 1.0;
-			}
-			printf("==============================\n");
-			printf("test accuracy: %.10f\n", sum / bottoms[0]->data.size());
-			os << sum / bottoms[0]->data.size() << "\n";
-
-			float_t loss = 0.0;
-			for (int num = 0; num < bottoms[0]->data.size(); num++)
-			{
-				label = (int)bottoms[1]->data[num][0];
-				//cout << data.data[num][label] << endl;
-				loss -= log(data.data[num][label]);
-			}
-			loss = loss / (float_t)BATCH_SIZE;
-			printf("loss         : %.10f\n", loss);
-			printf("==============================\n");
-
-		}
+		CACU_ACTIVATION_LEAKY_RELU_CPU(bottoms[0]->data,slope);
 	}
 
 	virtual const void backward(layer_param *&v) override
 	{
 
+		CACU_DE_ACTIVATION_LEAKY_RELU_CPU(storage_data->data["data"],slope, bottoms[0]->diff);
 	}
 
 	virtual const void save(std::ostream& os) override {
@@ -237,11 +114,13 @@ public:
 
 	virtual const int caculate_data_space() override {
 
-		printf("%s top costs : %d \n", layer_name.c_str(), 0);
+		int sum = 0;
 
 		printf("%s params costs %d \n", layer_name.c_str(), params->caculate_space());
 
-		return 0;
+		sum += params->caculate_space();
+		sum += storage_data->caculate_space();
+		return sum;
 	}
 
 #endif
@@ -263,6 +142,7 @@ public:
 		_pPARAMS.push_back(_param_dim);
 		_pPARAMS.push_back(_bin_param_outnum);
 		_pPARAMS.push_back(_bin_param_dim);
+
 	}
 
 	virtual const void INIT_SPACE_DATA() override {
@@ -276,9 +156,6 @@ public:
 
 		//here to initial the layer's space size
 		////////////////////////////////////////
-
-		_param_outnum.push_back(output_dim);
-		_param_dim.push_back(1);
 
 		////////////////////////////////////////
 
@@ -309,6 +186,11 @@ public:
 		//here to initial the layer's params size
 		////////////////////////////////////////
 
+		if (train == phrase) {
+			_param_outnum["data"] = BATCH_SIZE;
+			_param_dim["data"] = channel * input_dim * input_dim;
+		}
+
 		////////////////////////////////////////
 
 		_pSTORAGE.push_back(_param_outnum);
@@ -317,14 +199,14 @@ public:
 		_pSTORAGE.push_back(_bin_param_dim);
 	}
 
-	~accuracy_layer() {
-		os.close();
+	~leaky_relu_layer() {
+
 
 	}
 
-private:
+	float_t slope;
 
-	std::ofstream os;
+private:
 
 };
 
