@@ -1,4 +1,4 @@
-###this model performs a ~62% precision test
+###this model performs a ~68% precision test
 
 loss curve :
 
