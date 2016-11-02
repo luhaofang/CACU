@@ -32,10 +32,11 @@ network* cifar_myquick_xnor_leaky(type phrase = train) {
 	bl1->use_global_stats = use_global_stats;
 	net << bl1;
 
-	relu_layer *relu1 = new relu_layer("relu1", 32,  //channel
+	leaky_relu_layer *relu1 = new leaky_relu_layer("relu1", 32,  //channel
 			32, phrase);
 	relu1->bottoms << bl1->tops[0];  // bl1->tops[0];
 	relu1->tops << bl1->tops[0];  // bl1->tops[0];
+	relu1->slope = 0.01;
 	net << relu1;
 
 	max_pooling_layer *mp1 = new max_pooling_layer("pool1", 32,  //input_dim
@@ -76,7 +77,7 @@ network* cifar_myquick_xnor_leaky(type phrase = train) {
 	leaky_relu_layer *relu2 = new leaky_relu_layer("relu2", 16, 32, phrase);
 	relu2->bottoms << cl2->tops[0];
 	relu2->tops << cl2->tops[0];
-	relu2->slope = 0.1;
+	relu2->slope = 0.15;
 	net << relu2;
 
 	average_pooling_layer *ap1 = new average_pooling_layer("pool2", 16, //input_dim
@@ -117,7 +118,7 @@ network* cifar_myquick_xnor_leaky(type phrase = train) {
 	leaky_relu_layer *relu3 = new leaky_relu_layer("relu3", 8, 64, phrase);
 	relu3->bottoms << cl3->tops[0];
 	relu3->tops << cl3->tops[0];
-	relu3->slope = 0.1;
+	relu3->slope = 0.15;
 	net << relu3;
 
 	average_pooling_layer *ap2 = new average_pooling_layer("pool3", 8, //input_dim

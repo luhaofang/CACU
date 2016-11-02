@@ -29,7 +29,7 @@
 
 #if GPU_MODE
 #include <cuda_runtime.h>
-#define CHECK(res) if(res!=cudaSuccess){printf("[softmax cuda error  %d]",res);exit(-1);}
+
 #endif
 
 namespace mycnn {

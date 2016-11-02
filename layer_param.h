@@ -372,15 +372,16 @@ public:
 		for (it = data.begin(); it != data.end(); ++it) {
 			cudaFree(s_data[it->first]);
 			cudaFree(it->second);
-			for(int i =0; i < param_outnum[it->first];i++)
-			it->second[i] = NULL;
+			//for(int i =0; i < param_outnum[it->first];i++)
+			//it->second[i] = NULL;
 		}
+
 		map<char_t, unsigned int**>::iterator b_it;
 		for (b_it = bin_data.begin(); b_it != bin_data.end(); ++b_it) {
 			cudaFree(s_bin_data[b_it->first]);
 			cudaFree(b_it->second);
-			for(int i =0; i < bin_param_outnum[b_it->first];i++)
-			b_it->second[i] = NULL;
+			//for(int i =0; i < bin_param_outnum[b_it->first];i++)
+			//b_it->second[i] = NULL;
 		}
 		map<char_t, unsigned int**>().swap(bin_data);
 		map<char_t, float_t**>().swap(data);

@@ -37,10 +37,11 @@ network* resnet18(type phrase = train)
 	bn1->set_params_init_value("shift", constant, 0.0);
 	net << bn1;
 
-	relu_layer *relu1 = new relu_layer("relu1", 112,64,
+	leaky_relu_layer *relu1 = new leaky_relu_layer("relu1", 112,64,
 		phrase);
 	relu1->bottoms << bn1->tops[0];
 	relu1->tops << bc1->tops[0];
+	relu1->slope = 0.01;
 	net << relu1;
 
 	max_pooling_layer *mp1 = new max_pooling_layer("pool1",
@@ -114,7 +115,7 @@ network* resnet18(type phrase = train)
 	bc_1b->set_params_init_value("real_w", xavier);
 	net << bc_1b;
 
-	relu_layer *relu1_b = new relu_layer("relu1_b",56,64, phrase);
+	leaky_relu_layer *relu1_b = new leaky_relu_layer("relu1_b",56,64, phrase);
 	relu1_b->bottoms << bc_1b->tops[0];
 	relu1_b->tops << bc_1b->tops[0];
 	net << relu1_b;
@@ -156,7 +157,7 @@ network* resnet18(type phrase = train)
 	el_1->bottoms << bc_1c->tops[0];
 	net << el_1;
 
-	relu_layer *relu1_c = new relu_layer("relu1_c", 56, 64, phrase);
+	leaky_relu_layer *relu1_c = new leaky_relu_layer("relu1_c", 56, 64, phrase);
 	relu1_c->bottoms << el_1->tops[0];
 	relu1_c->tops << el_1->tops[0];
 	net << relu1_c;
@@ -224,7 +225,7 @@ network* resnet18(type phrase = train)
 	bc_2b->set_params_init_value("real_w", xavier);
 	net << bc_2b;
 
-	relu_layer *relu2_b = new relu_layer("relu2_b", 56, 64, phrase);
+	leaky_relu_layer *relu2_b = new leaky_relu_layer("relu2_b", 56, 64, phrase);
 	relu2_b->bottoms << bc_2b->tops[0];
 	relu2_b->tops << bc_2b->tops[0];
 	net << relu2_b;
@@ -266,7 +267,7 @@ network* resnet18(type phrase = train)
 	el_2->bottoms << bc_2c->tops[0];
 	net << el_2;
 
-	relu_layer *relu2_c = new relu_layer("relu2_c", 56, 64, phrase);
+	leaky_relu_layer *relu2_c = new leaky_relu_layer("relu2_c", 56, 64, phrase);
 	relu2_c->bottoms << el_1->tops[0];
 	relu2_c->tops << el_1->tops[0];
 	net << relu2_c;
@@ -334,7 +335,7 @@ network* resnet18(type phrase = train)
 	bc_3b->set_params_init_value("real_w", xavier);
 	net << bc_3b;
 
-	relu_layer *relu3_b = new relu_layer("relu3_b", 28, 128, phrase);
+	leaky_relu_layer *relu3_b = new leaky_relu_layer("relu3_b", 28, 128, phrase);
 	relu3_b->bottoms << bc_3b->tops[0];
 	relu3_b->tops << bc_3b->tops[0];
 	net << relu3_b;
@@ -376,7 +377,7 @@ network* resnet18(type phrase = train)
 	el_3->bottoms << bc_3c->tops[0];
 	net << el_3;
 
-	relu_layer *relu3_c = new relu_layer("relu3_c", 28, 128, phrase);
+	leaky_relu_layer *relu3_c = new leaky_relu_layer("relu3_c", 28, 128, phrase);
 	relu3_c->bottoms << el_3->tops[0];
 	relu3_c->tops << el_3->tops[0];
 	net << relu3_c;
@@ -444,7 +445,7 @@ network* resnet18(type phrase = train)
 	bc_4b->set_params_init_value("real_w", xavier);
 	net << bc_4b;
 
-	relu_layer *relu4_b = new relu_layer("relu4_b", 28, 128, phrase);
+	leaky_relu_layer *relu4_b = new leaky_relu_layer("relu4_b", 28, 128, phrase);
 	relu4_b->bottoms << bc_4b->tops[0];
 	relu4_b->tops << bc_4b->tops[0];
 	net << relu4_b;
@@ -486,7 +487,7 @@ network* resnet18(type phrase = train)
 	el_4->bottoms << bc_4c->tops[0];
 	net << el_4;
 
-	relu_layer *relu4_c = new relu_layer("relu4_c", 28, 128, phrase);
+	leaky_relu_layer *relu4_c = new leaky_relu_layer("relu4_c", 28, 128, phrase);
 	relu4_c->bottoms << el_4->tops[0];
 	relu4_c->tops << el_4->tops[0];
 	net << relu4_c;
@@ -554,7 +555,7 @@ network* resnet18(type phrase = train)
 	bc_5b->set_params_init_value("real_w", xavier);
 	net << bc_5b;
 
-	relu_layer *relu5_b = new relu_layer("relu5_b",14,256, phrase);
+	leaky_relu_layer *relu5_b = new leaky_relu_layer("relu5_b",14,256, phrase);
 	relu5_b->bottoms << bc_5b->tops[0];
 	relu5_b->tops << bc_5b->tops[0];
 	net << relu5_b;
@@ -596,7 +597,7 @@ network* resnet18(type phrase = train)
 	el_5->bottoms << bc_5c->tops[0];
 	net << el_5;
 
-	relu_layer *relu5_c = new relu_layer("relu5_c", 14, 256, phrase);
+	leaky_relu_layer *relu5_c = new leaky_relu_layer("relu5_c", 14, 256, phrase);
 	relu5_c->bottoms << el_5->tops[0];
 	relu5_c->tops << el_5->tops[0];
 	net << relu5_c;
@@ -664,7 +665,7 @@ network* resnet18(type phrase = train)
 	bc_6b->set_params_init_value("real_w", xavier);
 	net << bc_6b;
 
-	relu_layer *relu6_b = new relu_layer("relu6_b", 14, 256, phrase);
+	leaky_relu_layer *relu6_b = new leaky_relu_layer("relu6_b", 14, 256, phrase);
 	relu6_b->bottoms << bc_6b->tops[0];
 	relu6_b->tops << bc_6b->tops[0];
 	net << relu6_b;
@@ -706,7 +707,7 @@ network* resnet18(type phrase = train)
 	el_6->bottoms << bc_6c->tops[0];
 	net << el_6;
 
-	relu_layer *relu6_c = new relu_layer("relu6_c", 14, 256, phrase);
+	leaky_relu_layer *relu6_c = new leaky_relu_layer("relu6_c", 14, 256, phrase);
 	relu6_c->bottoms << el_6->tops[0];
 	relu6_c->tops << el_6->tops[0];
 	net << relu6_c;
@@ -774,7 +775,7 @@ network* resnet18(type phrase = train)
 	bc_7b->set_params_init_value("real_w", xavier);
 	net << bc_7b;
 
-	relu_layer *relu7_b = new relu_layer("relu7_b", 7, 512, phrase);
+	leaky_relu_layer *relu7_b = new leaky_relu_layer("relu7_b", 7, 512, phrase);
 	relu7_b->bottoms << bc_7b->tops[0];
 	relu7_b->tops << bc_7b->tops[0];
 	net << relu7_b;
@@ -816,7 +817,7 @@ network* resnet18(type phrase = train)
 	el_7->bottoms << bc_7c->tops[0];
 	net << el_7;
 
-	relu_layer *relu7_c = new relu_layer("relu7_c", 7, 512, phrase);
+	leaky_relu_layer *relu7_c = new leaky_relu_layer("relu7_c", 7, 512, phrase);
 	relu7_c->bottoms << el_7->tops[0];
 	relu7_c->tops << el_7->tops[0];
 	net << relu7_c;
@@ -884,7 +885,7 @@ network* resnet18(type phrase = train)
 	bc_8b->set_params_init_value("real_w", xavier);
 	net << bc_8b;
 
-	relu_layer *relu8_b = new relu_layer("relu8_b",7,512, phrase);
+	leaky_relu_layer *relu8_b = new leaky_relu_layer("relu8_b",7,512, phrase);
 	relu8_b->bottoms << bc_8b->tops[0];
 	relu8_b->tops << bc_8b->tops[0];
 	net << relu8_b;
@@ -926,7 +927,7 @@ network* resnet18(type phrase = train)
 	el_8->bottoms << bc_8c->tops[0];
 	net << el_8;
 
-	relu_layer *relu8_c = new relu_layer("relu8_c", 7, 512, phrase);
+	leaky_relu_layer *relu8_c = new leaky_relu_layer("relu8_c", 7, 512, phrase);
 	relu8_c->bottoms << el_8->tops[0];
 	relu8_c->tops << el_8->tops[0];
 	net << relu8_c;
@@ -946,7 +947,7 @@ network* resnet18(type phrase = train)
 	inner_product_layer *ip = new inner_product_layer("ip",
 		1,
 		512,
-		15,
+		1000,
 		phrase);
 	ip->bottoms << ap->tops[0];
 	ip->set_params_init_value("w", xavier);
@@ -954,7 +955,7 @@ network* resnet18(type phrase = train)
 	net << ip;
 
 	softmax_layer *softmax = new softmax_layer("softmax",
-		15,   //input_dim		
+		1000,   //input_dim
 		phrase);  //output_dim
 	softmax->bottoms << ip->tops[0];
 	softmax->bottoms << labels;

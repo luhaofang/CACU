@@ -201,11 +201,13 @@ protected:
 private:
 
 	void DELETE_SPACE() {
+
 		map<char_t, layer*>::iterator it;
 		for (it = net_.begin(); it != net_.end(); ++it) {
 			delete it->second;
 			it->second = NULL;
 		}
+
 		map<char_t, layer*>().swap(net_);
 
 		vector<char_t>().swap(layers);
@@ -226,6 +228,7 @@ private:
 			delete P_MEM_STORAGE[layers[i]];
 			P_MEM_SPACE[layers[i]] = NULL;
 		}
+
 	}
 
 	void ALLOC_DATA_SPACE() {

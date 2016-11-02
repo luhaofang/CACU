@@ -50,7 +50,7 @@ public:
 	virtual const void forward() override
 	{
 		if (train == phrase)
-		copy_data_gpu(bottoms[0]->data, storage_data->data["data"], bottoms[0]->num, input_dim*input_dim*channel, 0);
+			copy_data_gpu(bottoms[0]->data, storage_data->data["data"], bottoms[0]->num, input_dim*input_dim*channel, 0);
 
 		CACU_ACTIVATION_LEAKY_RELU_GPU(bottoms[0]->data,bottoms[0]->num,input_dim*input_dim*channel,slope);
 
@@ -204,7 +204,7 @@ public:
 
 	}
 
-	float_t slope;
+	float_t slope = 0.15;
 
 private:
 

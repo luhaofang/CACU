@@ -288,6 +288,7 @@ public:
 	}
 
 	~bin_activation_layer() {
+
 		delete sum_k;
 		delete ks;
 		delete df;

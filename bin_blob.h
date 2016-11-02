@@ -31,7 +31,7 @@
 
 #if GPU_MODE
 #include <cuda_runtime.h>
-#define CHECK(res) if(res!=cudaSuccess){printf("[cuda error  %d]\n",res);exit(-1);}
+
 #endif
 
 namespace mycnn {
@@ -166,24 +166,24 @@ public:
 		if(train == this->phrase) {
 			cudaFree(s_bin_data);
 			cudaFree(s_diff);
-			cudaFree(bin_data);
-			cudaFree(diff);
-			s_bin_data = NULL;
-			s_diff = NULL;
-			for(int i = 0; i < num; i ++)
-			{
-				bin_data[i] = NULL;
-				diff[i] = NULL;
-			}
+//			cudaFree(bin_data);
+//			cudaFree(diff);
+//			s_bin_data = NULL;
+//			s_diff = NULL;
+//			for(int i = 0; i < num; i ++)
+//			{
+//				bin_data[i] = NULL;
+//				diff[i] = NULL;
+//			}
 		}
 		else {
 			cudaFree(s_bin_data);
-			cudaFree(bin_data);
-			s_bin_data = NULL;
-			for(int i = 0; i < num; i++)
-			{
-				bin_data[i] = NULL;
-			}
+//			cudaFree(bin_data);
+//			s_bin_data = NULL;
+//			for(int i = 0; i < num; i++)
+//			{
+//				bin_data[i] = NULL;
+//			}
 		}
 	};
 

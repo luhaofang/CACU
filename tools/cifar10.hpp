@@ -43,10 +43,11 @@ using namespace Gdiplus;
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 
+
 using namespace std;
 using namespace cv;
 #endif
-
+#include <iostream>
 #if GPU_MODE
 #include <cuda_runtime.h>
 #endif
@@ -56,57 +57,8 @@ using namespace cv;
 #include "../model/cifar10/cifar_10_quick.h"
 #include "../model/cifar10/cifar_10_myquick_xnor.h"
 #include "../model/cifar10/cifar_10_myquick_xnor_leaky.h"
+#include "../model/cifar10/cifar_10_myquick_xnor_sigmoid.h"
 
-#ifdef _WIN32
-
-std::wstring StringToWString(const std::string &str)
-{
-	std::wstring wstr(str.length(), L' ');
-	std::copy(str.begin(), str.end(), wstr.begin());
-	return wstr;
-}
-
-void read_image(const char* filename, vec_t &data_blob)
-{
-	GdiplusStartupInput gdiplusstartupinput;
-	ULONG_PTR gdiplustoken;
-	GdiplusStartup(&gdiplustoken, &gdiplusstartupinput, NULL);
-	Bitmap* bmp = new Bitmap(StringToWString(filename).c_str());
-	unsigned int height = bmp->GetHeight();
-	unsigned int width = bmp->GetWidth();
-	Color color;
-	mycnn::float_t* sp = &data_blob[0];
-	for (unsigned int y = 0; y < height; y++)
-	for (unsigned int x = 0; x < width; x++)
-	{
-		bmp->GetPixel(x, y, &color);
-		*(sp + (y * height + x) * 3) = ((mycnn::float_t)color.GetRed() - (mycnn::float_t)102.9801);
-		*(sp + (y * height + x) * 3 + 1) = ((mycnn::float_t)color.GetGreen() - (mycnn::float_t)115.9465);
-		*(sp + (y * height + x) * 3 + 2) = ((mycnn::float_t)color.GetBlue() - (mycnn::float_t)122.7717);
-	}
-	delete bmp;
-	GdiplusShutdown(gdiplustoken);
-}
-
-#elif linux
-
-void read_image(const char* filename, vec_t &data_blob) {
-
-	Mat src = imread(filename);
-	unsigned int height = src.rows;
-	unsigned int width = src.cols;
-	mycnn::float_t* sp = &data_blob[0];
-	for (unsigned int y = 0; y < height; y++)
-		for (unsigned int x = 0; x < width; x++) {
-			*(sp + (y * height + x) * 3) = ((mycnn::float_t) src.at<Vec3b>(y, x)[0]
-					- 102.9801);
-			*(sp + (y * height + x) * 3 + 1) = ((mycnn::float_t) src.at<Vec3b>(y, x)[1]
-					- 115.9465);
-			*(sp + (y * height + x) * 3 + 2) = ((mycnn::float_t) src.at<Vec3b>(y, x)[2]
-					- 122.7717);
-		}
-}
-#endif
 
 const int kCIFARImageNBytes = 3072;
 const int kCIFARBatchSize = 10000;
@@ -117,20 +69,20 @@ const int kCIFARDataCount = 50000;
 void readdata_sub_channel(string filename, vector<vec_t> &data_blob,
 		vector<vec_t> &labels, vec_t mean) {
 	std::ifstream data_file(filename, std::ios::in | std::ios::binary);
-	mycnn::float_t *snp;
+	float_t *snp;
 	for (unsigned int i = 0; i < kCIFARBatchSize; i++) {
 		char label_char;
 		data_file.read(&label_char, 1);
-		labels.push_back(vec_t(1, mycnn::float_t((label_char))));
+		labels.push_back(vec_t(1, float_t((label_char))));
 		char buffer[kCIFARImageNBytes];
 		data_file.read(buffer, kCIFARImageNBytes);
 		vec_t datas(kCIFARImageNBytes);
 		snp = &datas[0];
 		for (unsigned int j = 0; j < kCIFARDataSize; j++) {
-			*(snp + j * 3) = (mycnn::float_t) ((unsigned char) (buffer[j])) - mean[0];
-			*(snp + j * 3 + 1) = (mycnn::float_t) ((unsigned char) (buffer[j
+			*(snp + j * 3) = (float_t) ((unsigned char) (buffer[j])) - mean[0];
+			*(snp + j * 3 + 1) = (float_t) ((unsigned char) (buffer[j
 					+ kCIFARDataSize])) - mean[1];
-			*(snp + j * 3 + 2) = (mycnn::float_t) ((unsigned char) (buffer[j
+			*(snp + j * 3 + 2) = (float_t) ((unsigned char) (buffer[j
 					+ 2 * kCIFARDataSize])) - mean[2];
 		}
 		data_blob.push_back(datas);
@@ -140,26 +92,26 @@ void readdata_sub_channel(string filename, vector<vec_t> &data_blob,
 void readdata_sub_dim(string filename, vector<vec_t> &data_blob,
 		vector<vec_t> &labels, vec_t &mean) {
 	std::ifstream data_file(filename, std::ios::in | std::ios::binary);
-	mycnn::float_t *snp;
+	float_t *snp;
 
 	for (unsigned int i = 0; i < kCIFARBatchSize; i++) {
 		char label_char;
 		data_file.read(&label_char, 1);
-		labels.push_back(vec_t(1, mycnn::float_t((label_char))));
+		labels.push_back(vec_t(1, float_t((label_char))));
 		char buffer[kCIFARImageNBytes];
 		data_file.read(buffer, kCIFARImageNBytes);
 		vec_t datas(kCIFARImageNBytes);
 		snp = &datas[0];
 		for (unsigned int j = 0; j < kCIFARDataSize; j++) {
-			*(snp + j * 3) = (mycnn::float_t) ((unsigned char) (buffer[j]))
+			*(snp + j * 3) = (float_t) ((unsigned char) (buffer[j]))
 					- mean[j * 3];
 			*(snp + j * 3 + 1) =
-					(mycnn::float_t) ((unsigned char) (buffer[kCIFARDataSize + j]))
+					(float_t) ((unsigned char) (buffer[kCIFARDataSize + j]))
 							- mean[j * 3 + 1];
 			*(snp + j * 3 + 2) =
-					(mycnn::float_t) ((unsigned char) (buffer[kCIFARDataSize * 2 + j]))
+					(float_t) ((unsigned char) (buffer[kCIFARDataSize * 2 + j]))
 							- mean[j * 3 + 2];
-			//printf("%.5f - %.5f = %.5f\n", (mycnn::float_t)((unsigned char)(buffer[j])) ,mean[j] , *(snp + j));
+			//printf("%.5f - %.5f = %.5f\n", (float_t)((unsigned char)(buffer[j])) ,mean[j] , *(snp + j));
 		}
 		data_blob.push_back(datas);
 	}
@@ -168,20 +120,20 @@ void readdata_sub_dim(string filename, vector<vec_t> &data_blob,
 void readdata(string filename, vector<vec_t> &data_blob,
 		vector<vec_t> &labels) {
 	std::ifstream data_file(filename, std::ios::in | std::ios::binary);
-	mycnn::float_t *snp;
+	float_t *snp;
 	for (unsigned int i = 0; i < kCIFARBatchSize; i++) {
 		char label_char;
 		data_file.read(&label_char, 1);
-		labels.push_back(vec_t(1, mycnn::float_t((label_char))));
+		labels.push_back(vec_t(1, float_t((label_char))));
 		char buffer[kCIFARImageNBytes];
 		data_file.read(buffer, kCIFARImageNBytes);
 		vec_t datas(kCIFARImageNBytes);
 		snp = &datas[0];
 		for (unsigned int j = 0; j < kCIFARDataSize; j++) {
-			*(snp + j * 3) = (mycnn::float_t) ((unsigned char) (buffer[j]));
-			*(snp + j * 3 + 1) = (mycnn::float_t) ((unsigned char) (buffer[j
+			*(snp + j * 3) = (float_t) ((unsigned char) (buffer[j]));
+			*(snp + j * 3 + 1) = (float_t) ((unsigned char) (buffer[j
 					+ kCIFARDataSize]));
-			*(snp + j * 3 + 2) = (mycnn::float_t) ((unsigned char) (buffer[j
+			*(snp + j * 3 + 2) = (float_t) ((unsigned char) (buffer[j
 					+ 2 * kCIFARDataSize]));
 		}
 		data_blob.push_back(datas);
@@ -190,7 +142,7 @@ void readdata(string filename, vector<vec_t> &data_blob,
 
 void readdata(string filename, vector<vec_t> &data_blob) {
 	std::ifstream data_file(filename, std::ios::in | std::ios::binary);
-	mycnn::float_t *snp;
+	float_t *snp;
 	for (unsigned int i = 0; i < kCIFARBatchSize; i++) {
 		char label_char;
 		data_file.read(&label_char, 1);
@@ -199,10 +151,10 @@ void readdata(string filename, vector<vec_t> &data_blob) {
 		vec_t datas(kCIFARImageNBytes);
 		snp = &datas[0];
 		for (unsigned int j = 0; j < kCIFARDataSize; j++) {
-			*(snp + j * 3) = (mycnn::float_t) ((unsigned char) (buffer[j]));
-			*(snp + j * 3 + 1) = (mycnn::float_t) ((unsigned char) (buffer[j
+			*(snp + j * 3) = (float_t) ((unsigned char) (buffer[j]));
+			*(snp + j * 3 + 1) = (float_t) ((unsigned char) (buffer[j
 					+ kCIFARDataSize]));
-			*(snp + j * 3 + 2) = (mycnn::float_t) ((unsigned char) (buffer[j
+			*(snp + j * 3 + 2) = (float_t) ((unsigned char) (buffer[j
 					+ 2 * kCIFARDataSize]));
 		}
 		data_blob.push_back(datas);
@@ -212,7 +164,7 @@ void readdata(string filename, vector<vec_t> &data_blob) {
 #if GPU_MODE
 
 void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
-		mycnn::float_t *&out_data) {
+		float_t *&out_data) {
 
 	cudaError_t res;
 
@@ -222,7 +174,7 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 
 	vec_t h_data(count * length);
 
-	mycnn::float_t *start_data = &h_data[0];
+	float_t *start_data = &h_data[0];
 
 	int start_index;
 
@@ -237,7 +189,7 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 	}
 
 	res = cudaMemcpy((void*) (out_data), (void*) (start_data),
-			count * length * sizeof(mycnn::float_t), cudaMemcpyHostToDevice);
+			count * length * sizeof(float_t), cudaMemcpyHostToDevice);
 	CHECK(res);
 
 	vec_t().swap(h_data);
@@ -247,7 +199,7 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 
 void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 		vector<vec_t> &out_data) {
-	mycnn::float_t *snp, *sdp;
+	float_t *snp, *sdp;
 
 	start = start % data_blob.size();
 
@@ -275,8 +227,8 @@ vec_t calculate_mean_channel(string &filepath, int filecount) {
 		readdata((oss.str()), mean_data);
 	}
 
-	mycnn::float_t length = (mycnn::float_t) mean_data.size() * (mean_data[0].size() / 3);
-	mycnn::float_t r = 0, g = 0, b = 0;
+	float_t length = (float_t) mean_data.size() * (mean_data[0].size() / 3);
+	float_t r = 0, g = 0, b = 0;
 	for (unsigned int i = 0; i < mean_data.size(); i++) {
 		for (unsigned int j = 0; j < mean_data[i].size(); j++) {
 			if (j % 3 == 0)
@@ -307,7 +259,7 @@ vec_t calculate_mean_dim(string &filepath, int filecount) {
 		readdata((oss.str()), mean_data);
 	}
 
-	mycnn::float_t length = (mycnn::float_t) mean_data.size();
+	float_t length = (float_t) mean_data.size();
 
 	for (unsigned int i = 0; i < mean_data.size(); i++) {
 		for (unsigned int j = 0; j < kCIFARImageNBytes; j++) {
@@ -334,9 +286,10 @@ vec_t calculate_mean_channel() {
 void train_test() {
 
 	//network *net = cifar_quick();
-	//network *net = cifar_myquick_xnor_leaky();
-	network *net = cifar_myquick_xnor();
-	//net->load("/home/seal/dataset/experiment/cifar10/test_myquick_bin_256.model");
+	network *net = cifar_myquick_xnor_leaky();
+	//network *net = cifar_myquick_xnor();
+	//network *net = cifar_myquick_xnor_sigmoid();
+	//net->load("/home/seal/dataset/experiment/cifar10/test_myquick_5000_xnor_leaky.model");
 
 	vector<vec_t> input_data;
 	vector<vec_t> labels;
@@ -360,7 +313,7 @@ void train_test() {
 	readdata_sub_dim("/home/seal/dataset/caffe/data/cifar10/test_batch.bin",
 			test_data, test_labels, mean);
 
-	for (unsigned int i = 1; i <= MAX_ITER; i++) {
+	for (unsigned int i = 1; i <= CACU_MAX_ITER; i++) {
 
 		//int index = 0;
 		//vec_t image_data;
@@ -395,11 +348,13 @@ void train_test() {
 
 		if (i % SNAPSHOT == 0) {
 			ostringstream oss;
-			oss << "/home/seal/dataset/experiment/cifar10/test_myquick_bin" << i
+			oss << "/home/seal/dataset/experiment/cifar10/test_myquick_" << i
 					<< ".model";
 			net->save(oss.str().c_str());
 		}
 	}
+
+
 
 }
 
@@ -435,7 +390,7 @@ void train_test() {
 
 		readdata_sub_dim("/home/seal/dataset/caffe/data/cifar10/test_batch.bin", test_data->data, test_labels->data, mean);
 
-		for (unsigned int i = 1; i <= MAX_ITER; i++) {
+		for (unsigned int i = 1; i <= CACU_MAX_ITER; i++) {
 
 			//int index = 0;
 			//vec_t image_data;
@@ -472,8 +427,8 @@ void train_test() {
 	{
 		//network net = resnet18();
 		//network *net = cifar_quick(test);
-		network *net = cifar_myquick_xnor(test);
-		//network *net = cifar_myquick_xnor_leaky(test);
+		//network *net = cifar_myquick_xnor(test);
+		network *net = cifar_myquick_xnor_leaky(test);
 		net->load("/home/seal/dataset/experiment/cifar10/test_myquick_5000.model");
 
 		blob *input_data = new blob();
