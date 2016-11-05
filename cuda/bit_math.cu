@@ -69,8 +69,8 @@ extern "C" void BIT_CACU_SIGN_GPU(float_t **&data, unsigned int **&out_data,
 
 }
 
-__global__ void _k_BIT_CACU_SIGN_W_GPU(float_t **data_input,
-		unsigned int **data_output, int num, int length, int out_length) {
+__global__ void _k_BIT_CACU_SIGN_W_GPU(float_t *data_input,
+		unsigned int *data_output, int num, int length, int out_length) {
 
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
@@ -86,15 +86,14 @@ __global__ void _k_BIT_CACU_SIGN_W_GPU(float_t **data_input,
 
 	int end = length - 1;
 
-	int out_start, in_start, data;
+	int in_start, data;
 	int data_row;
 	for (int j = threadid; j < num * out_length; j += BLOCKNUM * THREADNUM) {
 		data_row = j / out_length;
-		out_start = j % out_length;
 		in_start = j % out_length * BIN_SIZE;
 		data = 0;
 		for (int i = 0; i < BIN_SIZE; i++) {
-			if (data_input[data_row][in_start + i] > 0)
+			if (data_input[data_row*length + in_start + i] > 0)
 				sp[i] = 1;
 			else
 				sp[i] = 0;
@@ -104,7 +103,7 @@ __global__ void _k_BIT_CACU_SIGN_W_GPU(float_t **data_input,
 		for (int i = 0; i < BIN_SIZE; i++) {
 			data += R[i] * sp[i];
 		}
-		data_output[data_row][out_start] = data;
+		data_output[j] = data;
 		for (int m = 0; m < BIN_SIZE; m++)
 			sp[m] = 0;
 	}
@@ -115,7 +114,7 @@ __global__ void _k_BIT_CACU_SIGN_W_GPU(float_t **data_input,
 }
 
 //caculate sign(W)
-extern "C" void BIT_CACU_SIGN_W_GPU(float_t **&data, unsigned int **&out_data,
+extern "C" void BIT_CACU_SIGN_W_GPU(float_t *&data, unsigned int *&out_data,
 		int w_num, int length) {
 
 	int out_length = length / BIN_SIZE;
@@ -158,46 +157,51 @@ extern "C" void BIT_CACU_DESIGN_GPU(float_t **&data, float_t **&out_data,
 	cudaThreadSynchronize();
 }
 
-__global__ void _k_BIT_CACU_COUNT_CONV_GPU(unsigned int **data_input,
-		float_t **data_output,unsigned int **kernels, float_t **ks,
-		float_t **a, int num, int w_num, int out_length, int motif, int block_size) {
+__global__ void _k_BIT_CACU_COUNT_CONV_GPU(unsigned int *data_input,
+		float_t *data_output, unsigned int *kernels, float_t *ks, float_t *a,
+		int num, int kernels_num, int out_length, int motif, int block_size) {
 
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
 
 	int threadid = bid * THREADNUM + tid;
 
-	int out_start, in_start, bit_count, index, xnor, sum;
+	int in_start, bit_count, index, xnor, sum;
 	int data_row, data_col;
 
-	for (int j = threadid; j < out_length*num; j += BLOCKNUM * THREADNUM) {
+	int ks_length = out_length / kernels_num;
+	int indata_length = ks_length * block_size;
+	int kernel_length = block_size;
+
+	for (int j = threadid; j < out_length * num; j += BLOCKNUM * THREADNUM) {
 		data_row = j / out_length;
 		data_col = j % out_length;
-		out_start = data_col;
-		in_start = data_col / w_num * block_size;
-		index = data_col % w_num;
+		in_start = data_col / kernels_num * block_size;
+		index = data_col % kernels_num;
 		sum = 0;
 		for (int i = 0; i < block_size; i++) {
-			xnor = data_input[data_row][in_start + i] ^ kernels[index][i];
+			xnor = data_input[data_row * indata_length + in_start + i]
+					^ kernels[index * kernel_length + i];
 
 			for (bit_count = 0; xnor != 0; xnor &= (xnor - 1))
 				bit_count++;
 			sum += bit_count;
 		}
-		data_output[data_row][out_start] = (float_t)(motif - 2 * sum)
-				* ks[data_row][data_col / w_num] * a[index][0];
+		data_output[j] = (float_t) (motif - 2 * sum)
+				* ks[data_row * ks_length + data_col / kernels_num] * a[index];
 	}
 }
 
 //caculate the a*ks_*(modif - 2 * bitcount(k_^x_))
 //block_size is the kernel_size*kernel_size*channel / BIN_SIZE
-extern "C" void BIT_CACU_COUNT_CONV_GPU(unsigned int **&data,
-		unsigned int **&kernels, float_t **&ks, float_t **&a,int num, int motif,
-		int w_num, int out_length, int block_size, float_t **&out_data) {
+extern "C" void BIT_CACU_COUNT_CONV_GPU(unsigned int *&data,
+		unsigned int *&kernels, float_t *&ks, float_t *&a, int num, int motif,
+		int kernels_num, int out_length, int block_size, float_t *&out_data) {
 
 	_k_BIT_CACU_COUNT_CONV_GPU<<<BLOCKNUM, THREADNUM, 0>>>(data, out_data,
-			kernels, ks, a,num, w_num, out_length, block_size, motif);
+			kernels, ks, a,num, kernels_num, out_length, block_size, motif);
 
 	cudaThreadSynchronize();
 
 }
+

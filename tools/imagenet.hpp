@@ -171,13 +171,13 @@ void calculate_mean_dim(mycnn::char_t filepath, mycnn::char_t dirpath) {
 
 #endif
 
-void readimage2vec(mycnn::char_t filepath, mycnn::float_t *data, vec_t &mean) {
+void readimage2vec(mycnn::char_t filepath, vec_t &data, vec_t &mean) {
 
 	mycnn::float_t* mp = &mean[0];
-	mycnn::float_t* sp = data;
+	mycnn::float_t* sp = &data[0];
 	Mat src = imread((filepath), IMREAD_COLOR);
-	unsigned int height = src.rows;
-	unsigned int width = src.cols;
+	unsigned int height = 224;
+	unsigned int width = 224;
 
 	for (unsigned int y = 0; y < height; y++)
 		for (unsigned int x = 0; x < width; x++) {
@@ -189,6 +189,7 @@ void readimage2vec(mycnn::char_t filepath, mycnn::float_t *data, vec_t &mean) {
 			*(sp + (y * height + x) * 3 + 2) = ((mycnn::float_t) src.at<Vec3b>(
 					y, x)[2] - *(mp + (y * height + x) * 3 + 2));
 		}
+
 }
 
 void calculate_mean_dim(mycnn::char_t filepath, mycnn::char_t dirpath) {
@@ -248,9 +249,10 @@ void calculate_mean_dim(mycnn::char_t filepath, mycnn::char_t dirpath) {
 
 void read_mean(string meanfile, vec_t &mean) {
 	std::ifstream is(meanfile);
-	float_t _f;
+	mycnn::float_t _f;
 	for (int i = 0; i < mean.size(); i++) {
-		is.read(reinterpret_cast<char*>(&_f), sizeof(float_t));
+		is.read(reinterpret_cast<char*>(&_f), sizeof(mycnn::float_t));
+		mean[i] = _f;
 	}
 	is.close();
 }
@@ -259,59 +261,64 @@ void read_mean(string meanfile, vec_t &mean) {
 
 void getdata(unsigned int count, unsigned int start,
 		vector<mycnn::char_t> &data_blob, vec_t &mean,
-		mycnn::float_t *&out_data) {
+		blob *&out_data) {
+
+	assert(out_data->num == count);
+	assert(out_data->channel * out_data->dim * out_data->dim == ImageNBytes);
 
 	cudaError_t res;
-
+	mycnn::char_t dirpath =
+				"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_img_train_224/";
 	start = start % data_blob.size();
 
-	vec_t h_data(count * ImageNBytes);
+	vec_t h_data(count*ImageNBytes);
+	vec_t data(ImageNBytes);
 
 	mycnn::float_t *start_data = &h_data[0];
-
+	mycnn::float_t *sp = &data[0];
 	int start_index;
 
 	for (unsigned int i = start, c = 0; c < count; c++, i++) {
 		if (i >= data_blob.size())
 			i = 0;
-		readimage2vec(data_blob[i], (start_data + c * ImageNBytes), mean);
+		readimage2vec(dirpath+data_blob[i], data, mean);
+		start_data = &h_data[0] + c * ImageNBytes;
+		for(int j = 0; j < ImageNBytes ; j ++){
+			*(start_data + j) = *(sp + j);
+		}
 	}
 
-	res = cudaMemcpy((void*) (out_data), (void*) (start_data),
-			count * ImageNBytes * sizeof(mycnn::float_t),
+	res = cudaMemcpy((void*) (out_data->s_data), (void*) (&h_data[0]),
+			h_data.size() * sizeof(mycnn::float_t),
 			cudaMemcpyHostToDevice);
 	CHECK(res);
 
 	vec_t().swap(h_data);
+	vec_t().swap(data);
 }
 
 void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
-		float_t *&out_data) {
-
+		blob *&out_data) {
+	assert(out_data->num == count);
 	cudaError_t res;
 
 	start = start % data_blob.size();
 
-	int length = data_blob[0].size();
-
-	vec_t h_data(count * length);
+	vec_t h_data(count);
 
 	float_t *start_data = &h_data[0];
-
-	int start_index;
 
 	for (unsigned int i = start, c = 0; c < count; c++, i++) {
 
 		if (i >= data_blob.size())
 			i = 0;
-		start_index = c * length;
-		for (int j = 0; j < length; j++) {
-			*(start_data + start_index + j) = data_blob[i][j];
-		}
+
+		*(start_data + c) = data_blob[i][0];
+
 	}
 
-	res = cudaMemcpy((void*) (out_data), (void*) (start_data),
-			count * length * sizeof(float_t), cudaMemcpyHostToDevice);
+	res = cudaMemcpy((void*) (out_data->s_data), (void*) (start_data),
+			count * sizeof(float_t), cudaMemcpyHostToDevice);
 	CHECK(res);
 
 	vec_t().swap(h_data);
@@ -339,7 +346,7 @@ void train_test() {
 	while (getline(is, line)) {
 		input_data.push_back(split(line, "\t")[0]);
 		label = atof(split(line, "\t")[1].c_str());
-		labels.push_back(vec_t(1,label));
+		labels.push_back(vec_t(1, label));
 	}
 
 	for (unsigned int i = 1; i <= CACU_MAX_ITER; i++) {
@@ -368,10 +375,10 @@ void train_test() {
 //		}
 
 		getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, input_data, mean,
-				net->net_[net->layers[0]]->bottoms[0]->s_data);
+				net->net_[net->layers[0]]->bottoms[0]);
 
 		getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, labels,
-				net->net_["softmax"]->bottoms[1]->s_data);
+				net->net_["softmax"]->bottoms[1]);
 
 		s.train(i);
 

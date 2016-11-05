@@ -29,24 +29,18 @@
 
 namespace mycnn {
 
-class bin_activation_layer: public layer {
-	activation::sign h_;
+class split_layer: public layer {
 
 public:
 
-	bin_activation_layer(char_t layer_name, int input_dim, int channel,
-			int kernel_size, int stride, int pad, type phrase, float_t lr_w =
-					1.0, float_t lr_b = 1.0) :
-			layer(layer_name, input_dim, channel, kernel_size, stride, pad,
-					phrase, lr_w, lr_b) {
+	split_layer(char_t layer_name, int input_dim, int channel, type phrase =
+			train, float_t lr_w = 1.0, float_t lr_b = 1.0) :
+			layer(layer_name, input_dim, channel, phrase, lr_w, lr_b) {
 		this->layer_name = layer_name;
-		this->output_dim = (input_dim + pad * 2 - kernel_size) / stride + 1;
-		this->stride = stride;
-		this->pad = pad;
-		this->kernel_size = kernel_size;
-		this->output_channel = channel;
-		this->input_dim = input_dim;
+		this->output_dim = input_dim;
 		this->channel = channel;
+		this->input_dim = input_dim;
+		this->output_channel = channel;
 		this->phrase = phrase;
 		this->set_lr_w(lr_w);
 		this->set_lr_b(lr_b);
@@ -60,31 +54,15 @@ public:
 	virtual const void forward() override
 	{
 
-		//sum by channel
-		CACU_SUM_ABS_GPU(bottoms[0]->data, bottoms[0]->num, input_dim*input_dim*channel,
-				input_dim*input_dim, channel, sum_k->data);
+		assert(tops[0]->num == tops[1]->num);
 
-		//mean by channel and scaled by 1.0/kernel_size*kernel_size
-		CACU_SCALE_GPU_A(sum_k->data,(float_t)1.0 / (channel*kernel_size*kernel_size),bottoms[0]->num ,input_dim*input_dim, sum_k->data, 0);
-
-		copy_padding_data_blob_gpu(sum_k->s_data, bottoms[0]->num, input_dim, 1, pad, sum_pad_k->s_data);
-
-		//pad for convoluation
-		img2col_gpu(sum_pad_k->s_data, bottoms[0]->num, 1, input_dim+2*pad, kernel_size, stride, output_dim, ks->s_data);
-
-		CACU_SUM_SIZE_GPU(ks->data,bottoms[0]->num, (1 * kernel_size*kernel_size), output_dim*output_dim*kernel_size*kernel_size,
-				output_dim*output_dim,tops[0]->data);
-
-		BIT_CACU_SIGN_GPU(bottoms[0]->data, bin_tops[0]->bin_data,bottoms[0]->num,input_dim*input_dim*channel);
-
+		copy_data_gpu( bottoms[0]->data,tops[0]->data, tops[0]->num, output_dim*output_dim*output_channel, 0);
+		copy_data_gpu( bottoms[0]->data,tops[1]->data, tops[1]->num, output_dim*output_dim*output_channel, 0);
 	}
 
 	virtual const void backward(layer_param *&v) override
 	{
-		//caculate design(I)
-		BIT_CACU_DESIGN_GPU(bin_tops[0]->diff, df->data,bin_tops[0]->num,input_dim*input_dim*channel);
-		//scaled by design(I)
-		CACU_SCALE_GPU_D(bin_tops[0]->diff, df->data,bin_tops[0]->num,input_dim*input_dim*channel, bottoms[0]->diff);
+		CACU_SUM_GPU_D(tops[0]->diff, tops[1]->diff,bottoms[0]->num, input_dim*input_dim*channel,bottoms[0]->diff);
 	}
 
 	virtual const void save(std::ostream& os) override {
@@ -96,11 +74,7 @@ public:
 	}
 
 	virtual const void setup() override {
-		sum_k = new blob(bottoms[0]->num, 1, input_dim);
-		sum_pad_k = new blob(bottoms[0]->num, 1, input_dim+2*pad);
-		ks = new blob(bottoms[0]->num, 1, output_dim*kernel_size);
-		if(train == phrase)
-		df = new blob(bottoms[0]->num, output_channel, input_dim);
+
 	}
 
 	virtual const int caculate_data_space() override {
@@ -111,16 +85,16 @@ public:
 		int sum = 0;
 		for (int i = 0; i < tops.size(); i++) {
 			if (tops[i]->num > 0) {
-				sum += (tops[i]->num*input_dim*input_dim*channel);
+				sum += (tops[i]->num*output_dim*output_dim*channel);
 				if (train == phrase)
-				sum += (tops[i]->num*input_dim*input_dim*channel);
+				sum += (tops[i]->num*output_dim*output_dim*channel);
 			}
 		}
 		for (int i = 0; i < bin_tops.size(); i++) {
 			if (bin_tops[i]->num > 0) {
-				sum += (bin_tops[i]->num*input_dim*input_dim*channel / BIN_SIZE);
+				sum += (bin_tops[i]->num*output_dim*output_dim*channel / BIN_SIZE);
 				if (train == phrase)
-				sum += (bin_tops[i]->num*input_dim*input_dim*channel);
+				sum += (bin_tops[i]->num*output_dim*output_dim*channel);
 			}
 		}
 
@@ -129,39 +103,19 @@ public:
 		sum += params->caculate_space();
 		sum += storage_data->caculate_space();
 		printf("%s params costs %d \n", layer_name.c_str(), params->caculate_space());
-
 	}
 
 #else
 
 	virtual const void forward() override
 	{
-		//sum by channel
-		CACU_SUM_ABS_CPU(bottoms[0]->data, channel, sum_k->data);
-		//mean by channel and scaled by 1.0/kernel_size*kernel_size
-		for (int num = 0; num < bottoms[0]->data.size(); num++) {
-			CACU_SCALE_CPU(sum_k->data[num], (float_t)1.0 / (channel*kernel_size*kernel_size), sum_k->data[num], 0);
-		}
-		//pad for convoluation
-		img2col(sum_k->data, kernel_size, stride, pad, input_dim, output_dim, ks->data);
-
-		for (int num = 0; num < bottoms[0]->data.size(); num++) {
-			CACU_SUM_SIZE_CPU(ks->data[num], (1 * kernel_size*kernel_size), tops[0]->data[num]);
-		}
-
-		BIT_CACU_SIGN(bottoms[0]->data, bin_tops[0]->bin_data);
-
+		copy_data(bottoms[0]->data, tops[0]->data, 0);
+		copy_data(bottoms[0]->data, tops[1]->data, 0);
 	}
 
 	virtual const void backward(layer_param *&v) override
 	{
-		//caculate design(I)
-		BIT_CACU_DESIGN(bin_tops[0]->diff, df->data);
-		//scaled by design(I)
-		CACU_SCALE_CPU(bin_tops[0]->diff, df->data, bottoms[0]->diff);
-
-		//copy_data(bin_tops[0]->diff, bottoms[0]->diff, 0);
-
+		CACU_SUM_CPU(tops[0]->diff, tops[1]->diff, bottoms[0]->diff);
 	}
 
 	virtual const void save(std::ostream& os) override {
@@ -173,10 +127,7 @@ public:
 	}
 
 	virtual const void setup() override {
-		sum_k = new blob(bottoms[0]->num, 1, input_dim);
-		ks = new blob(bottoms[0]->num, 1, output_dim*kernel_size);
-		if(train == phrase)
-		df = new blob(BATCH_SIZE, output_channel, input_dim);
+
 	}
 
 	virtual const int caculate_data_space() override {
@@ -242,13 +193,11 @@ public:
 		//here to initial the layer's space size
 		////////////////////////////////////////
 
-		//for signed(I)
-		_bin_param_outnum.push_back(channel);
-		_bin_param_dim.push_back(this->input_dim);
+		_param_outnum.push_back(channel);
+		_param_dim.push_back(this->input_dim);
 
-		//for K
-		_param_outnum.push_back(1);
-		_param_dim.push_back(this->output_dim);
+		_param_outnum.push_back(channel);
+		_param_dim.push_back(this->input_dim);
 
 		////////////////////////////////////////
 
@@ -287,20 +236,12 @@ public:
 		_pSTORAGE.push_back(_bin_param_dim);
 	}
 
-	~bin_activation_layer() {
+	~split_layer() {
 
-		delete sum_k;
-		delete ks;
-		delete df;
-		delete sum_pad_k;
 	}
 
 private:
 
-	blob *sum_k = NULL;
-	blob *ks = NULL;
-	blob *df = NULL;
-	blob *sum_pad_k = NULL;
 };
 
 }

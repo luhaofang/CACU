@@ -37,8 +37,8 @@ using namespace std;
 #define BLOCKNUM 512
 #define THREADNUM 512
 
-__global__ void _k_copy_padding_data_blob_gpu(float_t **data_input,
-		float_t **data_output, int num, int input_dim, int channel, int pad) {
+__global__ void _k_copy_padding_data_blob_gpu(float_t *data_input,
+		float_t *data_output, int num, int input_dim, int channel, int pad) {
 
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
@@ -49,13 +49,13 @@ __global__ void _k_copy_padding_data_blob_gpu(float_t **data_input,
 
 	int output_length = output_dim * output_dim * channel;
 
-	int out_start, in_start, row, col;
+	int in_start, row, col;
 
 	int data_row, data_col;
+	int indata_length = input_dim * input_dim * channel;
 	for (int j = threadid; j < num * output_length; j += BLOCKNUM * THREADNUM) {
 		data_row = j / output_length;
 		data_col = j % output_length;
-		out_start = data_col;
 		row = data_col / (output_dim * channel);
 		//col = (data_col % (output_dim * channel)) / channel;
 		col = (data_col / channel) % output_dim;
@@ -63,17 +63,17 @@ __global__ void _k_copy_padding_data_blob_gpu(float_t **data_input,
 			if (col >= pad && col < output_dim - pad) {
 				in_start = ((row - pad) * input_dim + (col - pad)) * channel
 						+ data_col % channel;
-				data_output[data_row][out_start] =
-						data_input[data_row][in_start];
+				data_output[j] =
+						data_input[data_row * indata_length + in_start];
 			} else
-				data_output[data_row][out_start] = 0.0;
+				data_output[j] = 0.0;
 		} else
-			data_output[data_row][out_start] = 0.0;
+			data_output[j] = 0.0;
 	}
 }
 
-extern "C" void copy_padding_data_blob_gpu(float_t **&data, int num,
-		int input_dim, int channel, int pad, float_t **&out_data) {
+extern "C" void copy_padding_data_blob_gpu(float_t *&data, int num,
+		int input_dim, int channel, int pad, float_t *&out_data) {
 
 	_k_copy_padding_data_blob_gpu<<<BLOCKNUM, THREADNUM, 0>>>(data, out_data,
 			num, input_dim, channel, pad);
@@ -127,36 +127,37 @@ extern "C" void append_padding_data_blob_gpu(float_t **&data, int num,
 
 }
 
-__global__ void _k_copy_unpadding_data_gpu(float_t **data_input,
-		float_t **data_output, int num, int input_dim, int channel, int pad) {
+__global__ void _k_copy_unpadding_data_gpu(float_t *data_input,
+		float_t *data_output, int num, int input_dim, int channel, int pad) {
 
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
 
 	int threadid = bid * THREADNUM + tid;
 
-	int output_length = input_dim * input_dim * channel;
+	int length = input_dim * input_dim * channel;
 
 	int output_dim = input_dim + 2 * pad;
 
-	int out_start, in_start, row, col;
+	int indata_length = output_dim*output_dim*channel;
+
+	int in_start, row, col;
 
 	int data_row, data_col;
-	for (int j = threadid; j < num * output_length; j += BLOCKNUM * THREADNUM) {
-		data_row = j / output_length;
-		data_col = j % output_length;
-		out_start = data_col;
+	for (int j = threadid; j < num * length; j += BLOCKNUM * THREADNUM) {
+		data_row = j / length;
+		data_col = j % length;
 		row = data_col / (input_dim * channel);
 		//col = (data_col % (input_dim * channel)) / channel;
 		col = (data_col / channel) % input_dim;
 		in_start = ((row + pad) * output_dim + (col + pad)) * channel
 				+ data_col % channel;
-		data_output[data_row][out_start] = data_input[data_row][in_start];
+		data_output[j] = data_input[data_row * indata_length + in_start];
 	}
 }
 
-extern "C" void copy_unpadding_data_gpu(float_t **&data, int num, int input_dim,
-		int channel, int pad, float_t **&out_data) {
+extern "C" void copy_unpadding_data_gpu(float_t *&data, int num, int input_dim,
+		int channel, int pad, float_t *&out_data) {
 
 	_k_copy_unpadding_data_gpu<<<BLOCKNUM, THREADNUM, 0>>>(data, out_data, num,
 			input_dim, channel, pad);
@@ -202,8 +203,8 @@ extern "C" void append_unpadding_data_gpu(float_t **&data, int num,
 
 }
 
-__global__ void _k_copy_padding_data_sign_gpu(unsigned int **data_input,
-		unsigned int **data_output, int num, int input_dim, int channel,
+__global__ void _k_copy_padding_data_sign_gpu(unsigned int *data_input,
+		unsigned int *data_output, int num, int input_dim, int channel,
 		int pad) {
 
 	int tid = threadIdx.x;
@@ -215,13 +216,14 @@ __global__ void _k_copy_padding_data_sign_gpu(unsigned int **data_input,
 
 	int output_length = output_dim * output_dim * channel;
 
-	int out_start, in_start, row, col;
+	int input_length = input_dim * input_dim * channel;
+
+	int in_start, row, col;
 
 	int data_row, data_col;
 	for (int j = threadid; j < num * output_length; j += BLOCKNUM * THREADNUM) {
 		data_row = j / output_length;
 		data_col = j % output_length;
-		out_start = data_col;
 		row = data_col / (output_dim * channel);
 		//col = (data_col % (output_dim * channel)) / channel;
 		col = (data_col / channel) % output_dim;
@@ -229,17 +231,16 @@ __global__ void _k_copy_padding_data_sign_gpu(unsigned int **data_input,
 			if (col >= pad && col < output_dim - pad) {
 				in_start = ((row - pad) * input_dim + (col - pad)) * channel
 						+ data_col % channel;
-				data_output[data_row][out_start] =
-						data_input[data_row][in_start];
+				data_output[j] = data_input[data_row * input_length + in_start];
 			} else
-				data_output[data_row][out_start] = 0;
+				data_output[j] = 0;
 		} else
-			data_output[data_row][out_start] = 0;
+			data_output[j] = 0;
 	}
 }
 
-extern "C" void copy_padding_data_sign_gpu(unsigned int **&data, int num,
-		int input_dim, int channel, int pad, unsigned int **&out_data) {
+extern "C" void copy_padding_data_sign_gpu(unsigned int *&data, int num,
+		int input_dim, int channel, int pad, unsigned int *&out_data) {
 
 	_k_copy_padding_data_sign_gpu<<<BLOCKNUM, THREADNUM, 0>>>(data, out_data,
 			num, input_dim, channel, pad);
@@ -248,7 +249,7 @@ extern "C" void copy_padding_data_sign_gpu(unsigned int **&data, int num,
 
 }
 
-__global__ void _k_img2col_gpu(float_t **data_input, float_t **data_output,
+__global__ void _k_img2col_gpu(float_t *data_input, float_t *data_output,
 		int num, int block_size, int output_length, int channel, int input_dim,
 		int output_dim, int stride, int kernel_size) {
 
@@ -263,6 +264,9 @@ __global__ void _k_img2col_gpu(float_t **data_input, float_t **data_output,
 
 	int data_row, data_col;
 
+	int indata_length = input_dim * input_dim * channel;
+	int outdata_length = output_length * block_size * channel;
+
 	for (int j = threadid; j < num * output_length; j += BLOCKNUM * THREADNUM) {
 		data_row = j / output_length;
 		data_col = j % output_length;
@@ -273,16 +277,16 @@ __global__ void _k_img2col_gpu(float_t **data_input, float_t **data_output,
 				for (int kj = 0; kj < kernel_size; kj++) {
 					in = in_start + (ki * input_dim + kj) * channel + c;
 					out = out_start + c * block_size + ki * kernel_size + kj;
-					data_output[data_row][out] = data_input[data_row][in];
+					data_output[data_row * outdata_length + out] =
+							data_input[data_row * indata_length + in];
 				}
 			}
 		}
 	}
 }
 
-extern "C" void img2col_gpu(float_t **&data, int num, int channel,
-		int input_dim, int kernel_size, int stride, int output_dim,
-		float_t **&pad_input) {
+extern "C" void img2col_gpu(float_t *&data, int num, int channel, int input_dim,
+		int kernel_size, int stride, int output_dim, float_t *&pad_input) {
 
 	int block_size = kernel_size * kernel_size;
 	int output_length = output_dim * output_dim;
@@ -293,9 +297,9 @@ extern "C" void img2col_gpu(float_t **&data, int num, int channel,
 	cudaThreadSynchronize();
 }
 
-__global__ void _k_col2img_gpu(float_t **data, int num, int channel,
+__global__ void _k_col2img_gpu(float_t *data, int num, int channel,
 		int input_dim, int output_dim, int stride, int kernel_size, int length,
-		float_t **out_data) {
+		float_t *out_data) {
 
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
@@ -315,6 +319,8 @@ __global__ void _k_col2img_gpu(float_t **data, int num, int channel,
 
 	int block_size = kernel_size * kernel_size * channel;
 
+	int indata_length = output_dim*output_dim*block_size;
+
 	int c;
 
 	for (int i = threadid; i < num * length; i += BLOCKNUM * THREADNUM) {
@@ -322,7 +328,7 @@ __global__ void _k_col2img_gpu(float_t **data, int num, int channel,
 		data_row = i / length;
 		data_col = i % length;
 
-		out_data[data_row][data_col] = 0.0;
+		out_data[i] = 0.0;
 
 		startset_i = data_col / (channel * input_dim);
 		startset_j = (data_col / channel) % input_dim;
@@ -360,16 +366,15 @@ __global__ void _k_col2img_gpu(float_t **data, int num, int channel,
 						+ c * kernel_size * kernel_size;
 				outset_index = (outset_i * output_dim + outset_j) * block_size;
 
-				out_data[data_row][data_col] = out_data[data_row][data_col]
-						+ data[data_row][outset_index + k_index];
+				out_data[i] += data[data_row*indata_length + outset_index + k_index];
 
 			}
 	}
 }
 
-extern "C" void col2img_gpu(float_t **&data, int num, int channel,
+extern "C" void col2img_gpu(float_t *&data, int num, int channel,
 		int input_dim, int kernel_size, int stride, int output_dim,
-		float_t **&pad_input) {
+		float_t *&pad_input) {
 
 	int length = input_dim * input_dim * channel;
 
@@ -379,9 +384,9 @@ extern "C" void col2img_gpu(float_t **&data, int num, int channel,
 	cudaThreadSynchronize();
 }
 
-__global__ void _k_img2bitcol_gpu(unsigned int **data_input,
-		unsigned int **data_output, int num, int block_size, int output_length,
-		int channel, int input_dim, int output_dim, int stride,
+__global__ void _k_img2bitcol_gpu(unsigned int *data_input,
+		unsigned int *data_output, int num, int block_size, int output_length,
+		int channel, int input_dim, int output_dim, int stride, int length,
 		int kernel_size) {
 
 	int tid = threadIdx.x;
@@ -400,6 +405,8 @@ __global__ void _k_img2bitcol_gpu(unsigned int **data_input,
 	int count = 0, index, out_start, in_start, in;
 	int data_row, data_col;
 	unsigned int data = 0;
+	int outdata_length = output_length * block_size;
+	int indata_length = input_dim * input_dim * channel;
 	for (int j = threadid; j < num * output_length; j += BLOCKNUM * THREADNUM) {
 		data_row = j / output_length;
 		data_col = j % output_length;
@@ -411,12 +418,13 @@ __global__ void _k_img2bitcol_gpu(unsigned int **data_input,
 				for (int kj = 0; kj < kernel_size; kj++) {
 					in = in_start + (ki * input_dim + kj) * channel + c;
 					index = count % BIN_SIZE;
-					sp[index] = data_input[data_row][in];
+					sp[index] = data_input[data_row * indata_length + in];
 					if (index == BIN_SIZE - 1 || count == end_flag) {
 						for (int i = 0; i < BIN_SIZE; i++) {
 							data += R[i] * sp[i];
 						}
-						data_output[data_row][out_start] = data;
+						data_output[data_row * outdata_length + out_start] =
+								data;
 						data = 0;
 						out_start += 1;
 						for (int m = 0; m < BIN_SIZE; m++)
@@ -429,9 +437,9 @@ __global__ void _k_img2bitcol_gpu(unsigned int **data_input,
 	}
 }
 
-extern "C" void img2bitcol_gpu(unsigned int **&bin_data, int num, int channel,
+extern "C" void img2bitcol_gpu(unsigned int *&bin_data, int num, int channel,
 		int input_dim, int kernel_size, int stride, int pad, int output_dim,
-		unsigned int **&pad_input) {
+		unsigned int *&pad_input) {
 
 	clock_t start = clock();
 
@@ -448,40 +456,9 @@ extern "C" void img2bitcol_gpu(unsigned int **&bin_data, int num, int channel,
 	int output_length = output_dim * output_dim;
 	int input_dim_ = input_dim + 2 * pad;
 
-	/*
-	 needs to pad bit data first
-	 */
-
-	unsigned int **out_data;
-
-	cudaError_t res;
-
-	int width = num * channel * input_dim_ * input_dim_;
-
-	unsigned int *d_data;
-	unsigned int **h_data = (unsigned int **) malloc(
-			num * sizeof(unsigned int*));
-
-	res = cudaMalloc((void**) (&out_data), num * sizeof(unsigned int*));
-	CHECK(res);
-	res = cudaMalloc((void**) (&d_data), num * width * sizeof(unsigned int));
-	CHECK(res);
-
-	for (int i = 0; i < num; i++) {
-		h_data[i] = d_data + i * width;
-	}
-	res = cudaMemcpy((void*) (out_data), (void*) (h_data),
-			num * sizeof(unsigned int*), cudaMemcpyHostToDevice);
-	CHECK(res);
-
-	_k_copy_padding_data_sign_gpu<<<BLOCKNUM, THREADNUM, 0>>>(bin_data,
-			out_data, num, input_dim, channel, pad);
-
-	_k_img2bitcol_gpu<<<BLOCKNUM, THREADNUM, 0>>>(out_data, pad_input, num,
-			block_size, output_length, channel, input_dim_, output_dim, stride,
+	_k_img2bitcol_gpu<<<BLOCKNUM, THREADNUM, 0>>>(bin_data, pad_input, num,
+			block_size, output_length, channel, input_dim_, output_dim, stride,length,
 			kernel_size);
-
-	cudaFree(d_data);
 
 	cudaThreadSynchronize();
 }
@@ -721,32 +698,26 @@ extern "C" void copy2mean_gpu(float_t **&data, int num, int output_dim,
 
 }
 
-__global__ void _k_reset_data_gpu(float_t **data_input, int num, int length) {
+__global__ void _k_reset_data_gpu(float_t *data_input, int num, int length) {
 
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
 
 	int threadid = bid * THREADNUM + tid;
 
-	int out_start;
-
-	int data_row;
-
 	for (int j = threadid; j < num * length; j += BLOCKNUM * THREADNUM) {
-		data_row = j / length;
-		out_start = j % length;
-		data_input[data_row][out_start] = 0;
+		data_input[j] = 0;
 	}
 }
 
-extern "C" void reset_data_gpu(float_t **&data, int num, int length) {
+extern "C" void reset_data_gpu(float_t *&data, int num, int length) {
 
 	_k_reset_data_gpu<<<BLOCKNUM, THREADNUM, 0>>>(data, num, length);
 
 	cudaThreadSynchronize();
 }
 
-__global__ void _k_reset_bin_data_gpu(unsigned int **data_input, int num,
+__global__ void _k_reset_bin_data_gpu(unsigned int *data_input, int num,
 		int length) {
 
 	int tid = threadIdx.x;
@@ -754,18 +725,12 @@ __global__ void _k_reset_bin_data_gpu(unsigned int **data_input, int num,
 
 	int threadid = bid * THREADNUM + tid;
 
-	int out_start;
-
-	int data_row;
-
 	for (int j = threadid; j < num * length; j += BLOCKNUM * THREADNUM) {
-		data_row = j / length;
-		out_start = j % length;
-		data_input[data_row][out_start] = 0;
+		data_input[j] = 0;
 	}
 }
 
-extern "C" void reset_bin_data_gpu(unsigned int **&data, int num, int length) {
+extern "C" void reset_bin_data_gpu(unsigned int *&data, int num, int length) {
 
 	_k_reset_bin_data_gpu<<<BLOCKNUM, THREADNUM, 0>>>(data, num, length);
 

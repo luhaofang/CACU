@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "layer_param.h"
 
 #include "layer/layer.h"
+#include "layer/split_layer.h"
 #include "layer/average_pooling_layer.h"
 #include "layer/max_pooling_layer.h"
 #include "layer/bin_activation_layer.h"

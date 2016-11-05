@@ -98,20 +98,20 @@ public:
 
 		for (int i = 0; i < this->net->layers.size(); i++) {
 			//printf("==================%s\n",this->net->layers[i]);
-			start = clock();
+			//start = clock();
 			this->net->net_[this->net->layers[i]]->forward();
-			end = clock();
-			printf("%s layer forward time cost: %d ms\n",
-					this->net->layers[i].c_str(), (end - start) / 1000);
+			//end = clock();
+			//printf("%s layer forward time cost: %d ms\n",
+			//		this->net->layers[i].c_str(), (end - start) / 1000);
 		}
 
 		for (int i = this->net->layers.size() - 1; i >= 0; i--) {
-			start = clock();
+			//start = clock();
 			this->net->net_[this->net->layers[i]]->backward(
 					data_v[this->net->layers[i]]);
-			end = clock();
-			printf("%s layer backward time cost: %d ms\n",
-					this->net->layers[i].c_str(), (end - start) / 1000);
+			//end = clock();
+			//printf("%s layer backward time cost: %d ms\n",
+			//		this->net->layers[i].c_str(), (end - start) / 1000);
 		}
 
 		update_params();

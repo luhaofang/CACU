@@ -37,12 +37,12 @@ namespace mycnn {
 extern "C" void CACU_SUM_SIZE_GPU(float_t **&data, int num, int sum_size,
 		int length, int out_length, float_t **&out_data);
 
-extern "C" void CACU_MEAN_GPU(float_t **&data, int num, int length,
-		float_t **&out_data);
+extern "C" void CACU_MEAN_GPU(float_t *&data, int num, int length,
+		float_t *&out_data);
 
 //vec_t(size) -> vec_t(size/sum_size)
-extern "C" void CACU_SUM_SIZE_ABS_GPU(float_t **&data, int num, int sum_size,
-		int length, int out_length, float_t **&out_data);
+extern "C" void CACU_SUM_SIZE_ABS_GPU(float_t *&data, int num, int sum_size,
+		int length, int out_length, float_t *&out_data);
 
 //nums of vec_t(size) -> vec_t(size/sum_size)
 //caculate the means for batch_size
@@ -113,8 +113,8 @@ extern "C" void CACU_SUM_GPU_R(float_t **&data, float_t **&bias, int num,
 extern "C" void CACU_SUB_GPU(float_t **&data, float_t *&bias, int num,
 		int length, int channel, float_t **&out_data);
 
-extern "C" void CACU_SUB_GPU_D(float_t **&data, float_t **&bias, int num,
-		int length, float_t **&out_data);
+extern "C" void CACU_SUB_GPU_D(float_t *&data, float_t *&bias, int num,
+		int length, float_t *&out_data);
 
 //nums of vec_t(size) -> vec_t(size/sum_size)
 //caculate the division for batch_size
@@ -140,25 +140,25 @@ extern "C" void CACU_DX_GPU(float_t **&data, float_t **&dx_ba, float_t *&mean,
 		int channel, float_t **&out_data);
 
 //caculate the sum(a*x_0i)
-extern "C" void CACU_SCALE_SUM_ROW_GPU(float_t **&data, int num, int sum_size,
-		int kernels_num, int out_length, float_t **&kernels, float_t **&bias,
-		float_t **&out_data);
+extern "C" void CACU_SCALE_SUM_ROW_GPU(float_t *&data, int num, int sum_size,
+		int kernels_num, int out_length, float_t *&kernels, float_t *&bias,
+		float_t *&out_data);
 
 //caculate the grad_convolution for W
 //data : bottom
 //top_diff : diffs
 //out_data : diff_ws
-extern "C" void CACU_DECONV_W_BIN_GPU(float_t **&data, float_t **&top_diff, float_t **a,int num,
+extern "C" void CACU_DECONV_W_BIN_GPU(float_t *&data, float_t *&top_diff, float_t *a,int num,
 		int kernel_size, int kernels_num, int output_dim, int channel,
-		int stride, float_t **&out_data);
+		int stride, float_t *&out_data);
 
 //caculate the grad_convolution for W
 //data : bottom
 //top_diff : diffs
 //out_data : diff_ws
-extern "C" void CACU_DECONV_W_B_GPU(float_t **&data, float_t **&top_diff,
+extern "C" void CACU_DECONV_W_B_GPU(float_t *&data, float_t *&top_diff,
 		int num, int kernel_size, int kernels_num, int output_dim,
-		int channel, int stride, float_t **&out_data, float_t **&bias);
+		int channel, int stride, float_t *&out_data, float_t *&bias);
 
 //caculate the grad_convolution for diff
 //data : k
@@ -168,9 +168,9 @@ extern "C" void CACU_DECONV_DIFF_GPU(float_t **&data, float_t **&top_diff,
 		int kernel_size, int kernels_num, int num, int input_dim, int pad,
 		int channel, int stride, float_t **&out_data);
 
-extern "C" void CACU_DECONV_DIFF_COL_GPU(float_t **&data, float_t **&top_diff,
+extern "C" void CACU_DECONV_DIFF_COL_GPU(float_t *&data, float_t *&top_diff,
 		int kernel_size, int kernels_num, int num, int input_dim, int pad,
-		int channel, int stride, float_t **&out_data);
+		int channel, int stride, float_t *&out_data);
 
 //data : top_diff
 //scales : bottoms_data

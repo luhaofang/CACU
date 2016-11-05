@@ -34,36 +34,36 @@ namespace mycnn {
 
 #if GPU_MODE
 
-extern "C" void copy_padding_data_blob_gpu(float_t **&data, int num,
+extern "C" void copy_padding_data_blob_gpu(float_t *&data, int num,
 		int input_dim, int channel, int pad,
-		float_t **&out_data);
+		float_t *&out_data);
 
 extern "C" void append_padding_data_blob_gpu(float_t **&data, int num,
 		int input_dim, int channel, int pad,
 		float_t **&out_data);
 
-extern "C" void copy_unpadding_data_gpu(float_t **&data, int num, int input_dim,
-		int channel, int pad, float_t **&out_data);
+extern "C" void copy_unpadding_data_gpu(float_t *&data, int num, int input_dim,
+		int channel, int pad, float_t *&out_data);
 
 extern "C" void append_unpadding_data_gpu(float_t **&data, int num,
 		int input_dim, int channel, int pad, float_t **&out_data);
 
-extern "C" void copy_padding_data_sign_gpu(unsigned int **&data, int num,
+extern "C" void copy_padding_data_sign_gpu(unsigned int *&data, int num,
 		int input_dim, int channel, int pad,
-		unsigned int **&out_data);
+		unsigned int *&out_data);
 
-extern "C" void img2col_gpu(float_t **&data, int num, int channel,
+extern "C" void img2col_gpu(float_t *&data, int num, int channel,
 		int input_dim, int kernel_size, int stride, int output_dim,
-		float_t **&pad_input);
+		float_t *&pad_input);
 
-extern "C" void col2img_gpu(float_t **&data, int num, int channel,
+extern "C" void col2img_gpu(float_t *&data, int num, int channel,
 		int input_dim, int kernel_size, int stride, int output_dim,
-		float_t **&pad_input);
+		float_t *&pad_input);
 
 //pad and to bitcol
-extern "C" void img2bitcol_gpu(unsigned int **&bin_data, int num, int channel,
+extern "C" void img2bitcol_gpu(unsigned int *&bin_data, int num, int channel,
 		int input_dim, int kernel_size, int stride, int pad, int output_dim,
-		unsigned int **&pad_input);
+		unsigned int *&pad_input);
 
 extern "C" void copy_data_gpu(float_t **&data, float_t **&out_data,
 		int num, int length, int add);
@@ -78,9 +78,9 @@ extern "C" void copy2dest_gpu(float_t **&data, float_t **&index_data, int num,
 extern "C" void copy2mean_gpu(float_t **&data, int num,int output_dim, int input_dim,
 		int channel, int kernel_size, int stride, int pad, float_t **&out_data);
 
-extern "C" void reset_data_gpu(float_t **&data, int num, int length);
+extern "C" void reset_data_gpu(float_t *&data, int num, int length);
 
-extern "C" void reset_bin_data_gpu(unsigned int **&data, int num, int length);
+extern "C" void reset_bin_data_gpu(unsigned int *&data, int num, int length);
 
 extern "C" void set_data_gpu(float_t **&data, int num, int length,
 		float_t value);

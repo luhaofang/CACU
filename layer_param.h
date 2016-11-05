@@ -424,7 +424,7 @@ public:
 			map<char_t, int>::iterator it;
 			for (it = param_outnum.begin(); it != param_outnum.end(); ++it)
 			{
-				reset_data_gpu(data[it->first],param_outnum[it->first],param_dim[it->first]);
+				reset_data_gpu(s_data[it->first],param_outnum[it->first],param_dim[it->first]);
 			}
 			map<char_t, int>::iterator bin_it;
 			for (bin_it = bin_param_outnum.begin(); bin_it != bin_param_outnum.end(); ++bin_it)
@@ -434,7 +434,7 @@ public:
 				length = (bin_param_dim[bin_it->first] / 32);
 				else
 				length = (bin_param_dim[bin_it->first] / 32 + 1);
-				reset_bin_data_gpu(bin_data[bin_it->first],bin_param_outnum[bin_it->first],length);
+				reset_bin_data_gpu(s_bin_data[bin_it->first],bin_param_outnum[bin_it->first],length);
 			}
 		}
 	}

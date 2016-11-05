@@ -286,8 +286,8 @@ vec_t calculate_mean_channel() {
 void train_test() {
 
 	//network *net = cifar_quick();
-	network *net = cifar_myquick_xnor_leaky();
-	//network *net = cifar_myquick_xnor();
+	//network *net = cifar_myquick_xnor_leaky();
+	network *net = cifar_myquick_xnor();
 	//network *net = cifar_myquick_xnor_sigmoid();
 	//net->load("/home/seal/dataset/experiment/cifar10/test_myquick_5000_xnor_leaky.model");
 

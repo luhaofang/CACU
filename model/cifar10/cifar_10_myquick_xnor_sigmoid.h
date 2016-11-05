@@ -3,7 +3,7 @@
 
 using namespace mycnn;
 
-network* cifar_myquick_xnor(type phrase = train) {
+network* cifar_myquick_xnor_sigmoid(type phrase = train) {
 	//num,channel,dim
 	blob* input_data = new blob(BATCH_SIZE, 3, 32, phrase);
 	blob* labels = new blob(BATCH_SIZE, 1, 1);
@@ -13,15 +13,13 @@ network* cifar_myquick_xnor(type phrase = train) {
 	static network net;
 	net.phrase = phrase;
 
-	int channel = 128;
-
 	conv_layer *cl1 = new conv_layer("cl1", 32,   //input_dim
 			3,	   //channel
 			32,	   //output_channel
 			5,	   //kernel_size
 			1,	   //stride
 			2, phrase);	   //pad
-	cl1->bottoms << input_data;	//for 
+	cl1->bottoms << input_data;	//for
 	cl1->set_params_init_value("w", gaussian, 0.0001);
 	cl1->set_params_init_value("bias", constant);
 	net << cl1;
@@ -75,9 +73,10 @@ network* cifar_myquick_xnor(type phrase = train) {
 	cl2->set_params_init_value("real_w", gaussian, 0.0001);
 	net << cl2;
 
-	relu_layer *relu2 = new relu_layer("relu2", 16, 32, phrase);
+	sigmoid_layer *relu2 = new sigmoid_layer("relu2", 16, 32, phrase);
 	relu2->bottoms << cl2->tops[0];
 	relu2->tops << cl2->tops[0];
+	//relu2->slope = 0.15;
 	net << relu2;
 
 	average_pooling_layer *ap1 = new average_pooling_layer("pool2", 16, //input_dim
@@ -105,7 +104,7 @@ network* cifar_myquick_xnor(type phrase = train) {
 
 	bin_conv_layer *cl3 = new bin_conv_layer("cl3", 8,   //input_dim
 			32,	   //channel
-			channel,	   //output_channel
+			64,	   //output_channel
 			5,	   //kernel_size
 			1,	   //stride
 			2, phrase);	   //pad
@@ -115,21 +114,22 @@ network* cifar_myquick_xnor(type phrase = train) {
 	cl3->set_params_init_value("real_w", gaussian, 0.0001);
 	net << cl3;
 
-	relu_layer *relu3 = new relu_layer("relu3", 8, channel, phrase);
+	sigmoid_layer *relu3 = new sigmoid_layer("relu3", 8, 64, phrase);
 	relu3->bottoms << cl3->tops[0];
 	relu3->tops << cl3->tops[0];
+	//relu3->slope = 0.15;
 	net << relu3;
 
 	average_pooling_layer *ap2 = new average_pooling_layer("pool3", 8, //input_dim
-			channel,   //channel
+			64,   //channel
 			3,	  //kernel_size
 			2, phrase);	  //stride
 	ap2->bottoms << relu3->tops[0];
 	net << ap2;
 
 	inner_product_layer *ip1 = new inner_product_layer("ip1", 4,   //input_dim
-			channel,  //channel
-			channel,  //output_channel
+			64,  //channel
+			64,  //output_channel
 			phrase, 1, 2);
 	ip1->bottoms << ap2->tops[0];
 	ip1->set_params_init_value("w", gaussian, 0.1);
@@ -137,7 +137,7 @@ network* cifar_myquick_xnor(type phrase = train) {
 	net << ip1;
 
 	inner_product_layer *ip2 = new inner_product_layer("ip2", 1,   //input_dim
-			channel,  //channel
+			64,  //channel
 			10,  //output_channel
 			phrase, 1, 2);
 	ip2->bottoms << ip1->tops[0];

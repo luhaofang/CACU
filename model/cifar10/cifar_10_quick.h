@@ -12,6 +12,8 @@ network* cifar_quick(type phrase = train) {
 	static network net;
 	net.phrase = phrase;
 
+	int channel = 128;
+
 	conv_layer *cl1 = new conv_layer("cl1", 32,   //input_dim
 			3,	   //channel
 			32,	   //output_channel
@@ -60,7 +62,7 @@ network* cifar_quick(type phrase = train) {
 
 	conv_layer *cl3 = new conv_layer("cl3", 8,   //input_dim
 			32,	   //channel
-			64,	   //output_channel
+			channel,	   //output_channel
 			5,	   //kernel_size
 			1,	   //stride
 			2, phrase, 1, 2);	   //pad
@@ -69,21 +71,21 @@ network* cifar_quick(type phrase = train) {
 	cl3->set_params_init_value("bias", constant);
 	net << cl3;
 
-	relu_layer *relu3 = new relu_layer("relu3", 8, 64, phrase);
+	relu_layer *relu3 = new relu_layer("relu3", 8, channel, phrase);
 	relu3->bottoms << cl3->tops[0];
 	relu3->tops << cl3->tops[0];
 	net << relu3;
 
 	average_pooling_layer *ap2 = new average_pooling_layer("pool3", 8, //input_dim
-			64,   //channel
+			channel,   //channel
 			3,	  //kernel_size
 			2, phrase);	  //stride
 	ap2->bottoms << relu3->tops[0];
 	net << ap2;
 
 	inner_product_layer *ip1 = new inner_product_layer("ip1", 4,   //input_dim
-			64,  //channel
-			64,  //output_channel
+			channel,  //channel
+			channel,  //output_channel
 			phrase, 1, 2);
 	ip1->bottoms << ap2->tops[0];
 	ip1->set_params_init_value("w", gaussian, 0.1);
@@ -91,7 +93,7 @@ network* cifar_quick(type phrase = train) {
 	net << ip1;
 
 	inner_product_layer *ip2 = new inner_product_layer("ip2", 1,   //input_dim
-			64,  //channel
+			channel,  //channel
 			10,  //output_channel
 			phrase, 1, 2);
 	ip2->bottoms << ip1->tops[0];

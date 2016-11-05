@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <iostream>
+
 namespace mycnn {
 
 class network {
@@ -63,6 +65,7 @@ public:
 		ALLOC_PARAM_DATA_SPACE();
 		//alloc temporary data space
 		LAYER_SETUP();
+		cout << ": fuck" << std::endl;
 	}
 
 #if GPU_MODE

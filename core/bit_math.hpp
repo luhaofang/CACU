@@ -36,7 +36,7 @@ extern "C" void BIT_CACU_SIGN_GPU(float_t **&data,unsigned int **&out_data,
 		int num, int length);
 
 //caculate sign(W)
-extern "C" void BIT_CACU_SIGN_W_GPU(float_t **&data,unsigned int **&out_data,
+extern "C" void BIT_CACU_SIGN_W_GPU(float_t *&data,unsigned int *&out_data,
 		int w_num, int length);
 
 //caculate de sign(I)
@@ -44,10 +44,10 @@ extern "C" void BIT_CACU_DESIGN_GPU(float_t **&data, float_t **&out_data,
 		int num, int length);
 
 //caculate the a*ks_*(modif - 2 * bitcount(k_^x_))
-extern "C" void BIT_CACU_COUNT_CONV_GPU(unsigned int **&data,
-		unsigned int **&kernels, float_t **&ks, float_t **&a,int num, int motif,
-		int w_num, int out_length, int block_size,
-		float_t **&out_data);
+extern "C" void BIT_CACU_COUNT_CONV_GPU(unsigned int *&data,
+		unsigned int *&kernels, float_t *&ks, float_t *&a,int num, int motif,
+		int kernels_num, int out_length, int block_size,
+		float_t *&out_data);
 
 #else
 

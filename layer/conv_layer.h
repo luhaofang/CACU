@@ -59,20 +59,20 @@ public:
 	virtual const void forward() override
 	{
 		clock_t start = clock();
-		copy_padding_data_blob_gpu(bottoms[0]->data, bottoms[0]->num, input_dim, channel, pad, storage_data->data["pad_data"]);
+		copy_padding_data_blob_gpu(bottoms[0]->s_data, bottoms[0]->num, input_dim, channel, pad, storage_data->s_data["pad_data"]);
 		clock_t end = clock();
 		//printf("%d,",end-start);
 
 		start = clock();
 		//unroll for convoluation
-		img2col_gpu( storage_data->data["pad_data"], bottoms[0]->num, channel,
-				input_dim+2*pad, kernel_size, stride, output_dim,storage_data->data["col_data"]);
+		img2col_gpu( storage_data->s_data["pad_data"], bottoms[0]->num, channel,
+				input_dim+2*pad, kernel_size, stride, output_dim,storage_data->s_data["col_data"]);
 		end = clock();
 		//printf("%d,",end-start);
 
 		start = clock();
-		CACU_SCALE_SUM_ROW_GPU(storage_data->data["col_data"], bottoms[0]->num, kernel_size*kernel_size*channel, output_channel, output_dim*output_dim*output_channel, params->data["w"],
-				params->data["bias"], tops[0]->data);
+		CACU_SCALE_SUM_ROW_GPU(storage_data->s_data["col_data"], bottoms[0]->num, kernel_size*kernel_size*channel, output_channel, output_dim*output_dim*output_channel, params->s_data["w"],
+				params->s_data["bias"], tops[0]->s_data);
 		end = clock();
 		//printf("%d\n",end-start);
 
@@ -81,19 +81,19 @@ public:
 	virtual const void backward(layer_param *&v) override
 	{
 
-		CACU_DECONV_W_B_GPU(storage_data->data["col_data"], tops[0]->diff,tops[0]->num, kernel_size, output_channel, output_dim, channel,stride, v->data["w"],v->data["bias"]);
+		CACU_DECONV_W_B_GPU(storage_data->s_data["col_data"], tops[0]->s_diff,tops[0]->num, kernel_size, output_channel, output_dim, channel,stride, v->s_data["w"],v->s_data["bias"]);
 
-		reset_data_gpu( storage_data->data["pad_data"],bottoms[0]->num,(input_dim+2*pad)*(input_dim + 2*pad)*channel);
+		reset_data_gpu( storage_data->s_data["pad_data"],bottoms[0]->num,(input_dim+2*pad)*(input_dim + 2*pad)*channel);
 
-		reset_data_gpu( storage_data->data["col_data"],bottoms[0]->num,(output_dim*kernel_size)*(output_dim * kernel_size)*channel);
+		reset_data_gpu( storage_data->s_data["col_data"],bottoms[0]->num,(output_dim*kernel_size)*(output_dim * kernel_size)*channel);
 
 		//CACU_DECONV_DIFF_GPU(params->data["w"], tops[0]->diff,kernel_size, output_channel, tops[0]->num,input_dim, pad, channel, stride, storage_data->data["pad_data"]);
 
-		CACU_DECONV_DIFF_COL_GPU(params->data["w"], tops[0]->diff,kernel_size, output_channel, tops[0]->num,input_dim, pad, channel, stride, storage_data->data["col_data"]);
+		CACU_DECONV_DIFF_COL_GPU(params->s_data["w"], tops[0]->s_diff,kernel_size, output_channel, tops[0]->num,input_dim, pad, channel, stride, storage_data->s_data["col_data"]);
 
-		col2img_gpu(storage_data->data["col_data"], bottoms[0]->num, channel, input_dim+2*pad, kernel_size, stride, output_dim, storage_data->data["pad_data"]);
+		col2img_gpu(storage_data->s_data["col_data"], bottoms[0]->num, channel, input_dim+2*pad, kernel_size, stride, output_dim, storage_data->s_data["pad_data"]);
 
-		copy_unpadding_data_gpu(storage_data->data["pad_data"], bottoms[0]->num, input_dim, channel, pad, bottoms[0]->diff);
+		copy_unpadding_data_gpu(storage_data->s_data["pad_data"], bottoms[0]->num, input_dim, channel, pad, bottoms[0]->s_diff);
 
 	}
 

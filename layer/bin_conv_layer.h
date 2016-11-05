@@ -71,14 +71,15 @@ public:
 		if (train == this->phrase)
 		resigned_weights();
 
+		copy_padding_data_sign_gpu(bin_bottoms[0]->s_bin_data, bottoms[0]->num,input_dim, channel, pad,pad_data->s_bin_data);
 		//for img2col input data
 		//pad for convoluation
-		img2bitcol_gpu(bin_bottoms[0]->bin_data, bin_bottoms[0]->num, channel, input_dim, kernel_size, stride, pad, output_dim, storage_data->bin_data["pad_input"]);
+		img2bitcol_gpu(pad_data->s_bin_data, bin_bottoms[0]->num, channel, input_dim, kernel_size, stride, pad, output_dim, storage_data->s_bin_data["pad_input"]);
 		//printf("==================%s\n",this->layer_name);
 		//caculate binaried convolution
 
-		BIT_CACU_COUNT_CONV_GPU(storage_data->bin_data["pad_input"],params->bin_data["w"],bottoms[0]->data, params->data["a"], bottoms[0]->num,block_size,
-				output_channel, output_dim*output_dim*output_channel,kernel_size*kernel_size*channel, tops[0]->data);
+		BIT_CACU_COUNT_CONV_GPU(storage_data->s_bin_data["pad_input"],params->s_bin_data["w"],bottoms[0]->s_data, params->s_data["a"], bottoms[0]->num,block_size,
+				output_channel, output_dim*output_dim*output_channel,kernel_size*kernel_size*channel, tops[0]->s_data);
 
 //		cudaError_t res;
 //		vec_t test_data(block_size);
@@ -93,22 +94,22 @@ public:
 	virtual const void backward(layer_param *&v) override
 	{
 
-		copy_padding_data_blob_gpu(bottoms[1]->data, bottoms[1]->num, input_dim, channel, pad, storage_data->data["pad_data"]);
+		copy_padding_data_blob_gpu(bottoms[1]->s_data, bottoms[1]->num, input_dim, channel, pad, storage_data->s_data["pad_data"]);
 		//for update weights
-		img2col_gpu(storage_data->data["pad_data"], bottoms[1]->num, channel,
-				input_dim+2*pad, kernel_size, stride, output_dim,storage_data->data["col_data"]);
+		img2col_gpu(storage_data->s_data["pad_data"], bottoms[1]->num, channel,
+				input_dim+2*pad, kernel_size, stride, output_dim,storage_data->s_data["col_data"]);
 
-		CACU_DECONV_W_BIN_GPU(storage_data->data["col_data"], tops[0]->diff,params->data["a"],tops[0]->num,  kernel_size, output_channel, output_dim, channel,stride, v->data["real_w"]);
+		CACU_DECONV_W_BIN_GPU(storage_data->s_data["col_data"], tops[0]->s_diff,params->s_data["a"],tops[0]->num, kernel_size, output_channel, output_dim, channel,stride, v->s_data["real_w"]);
 
-		reset_data_gpu( storage_data->data["col_data"],bottoms[0]->num,(output_dim*kernel_size)*(output_dim * kernel_size)*channel);
+		reset_data_gpu( storage_data->s_data["col_data"],bottoms[0]->num,(output_dim*kernel_size)*(output_dim * kernel_size)*channel);
 
-		CACU_DECONV_DIFF_COL_GPU(params->data["real_w"], tops[0]->diff,kernel_size, output_channel, tops[0]->num,input_dim, pad, channel, stride, storage_data->data["col_data"]);
+		CACU_DECONV_DIFF_COL_GPU(params->s_data["real_w"], tops[0]->s_diff,kernel_size, output_channel, tops[0]->num,input_dim, pad, channel, stride, storage_data->s_data["col_data"]);
 
-		reset_data_gpu( storage_data->data["pad_data"],bottoms[0]->num,(input_dim+2*pad)*(input_dim + 2*pad)*channel);
+		reset_data_gpu( storage_data->s_data["pad_data"],bottoms[0]->num,(input_dim+2*pad)*(input_dim + 2*pad)*channel);
 
-		col2img_gpu(storage_data->data["col_data"], bottoms[0]->num, channel, input_dim+2*pad, kernel_size, stride, output_dim, storage_data->data["pad_data"]);
+		col2img_gpu(storage_data->s_data["col_data"], bottoms[0]->num, channel, input_dim+2*pad, kernel_size, stride, output_dim, storage_data->s_data["pad_data"]);
 
-		copy_unpadding_data_gpu(storage_data->data["pad_data"], bottoms[0]->num, input_dim, channel, pad, bin_bottoms[0]->diff);
+		copy_unpadding_data_gpu(storage_data->s_data["pad_data"], bottoms[0]->num, input_dim, channel, pad, bin_bottoms[0]->s_diff);
 
 	}
 
@@ -208,6 +209,7 @@ public:
 	virtual const void setup() override {
 		if(train == phrase)
 		means = new blob(output_channel,1,1);
+		pad_data = new bin_blob(bottoms[0]->num,(input_dim+2*pad)*(input_dim+2*pad)*channel);
 	}
 
 	virtual const int caculate_data_space() override {
@@ -489,31 +491,32 @@ public:
 
 	~bin_conv_layer() {
 		delete means;
+		delete pad_data;
 	}
 
 private:
 
 	int block_size;
 	blob *means;
+	bin_blob *pad_data;
 
 #if GPU_MODE
 
 	void resigned_weights()
 	{
 		//mean center
-		CACU_MEAN_GPU(params->data["real_w"],output_channel,channel*kernel_size*kernel_size,means->data);
+		CACU_MEAN_GPU(params->s_data["real_w"],output_channel,channel*kernel_size*kernel_size,means->s_data);
 
-		CACU_SUB_GPU_D(params->data["real_w"],means->data,output_channel,channel*kernel_size*kernel_size,params->data["real_w"]);
+		CACU_SUB_GPU_D(params->s_data["real_w"],means->s_data,output_channel,channel*kernel_size*kernel_size,params->s_data["real_w"]);
 
-		BIT_CACU_SIGN_W_GPU(params->data["real_w"], params->bin_data["w"],output_channel, kernel_size*kernel_size*channel);
+		BIT_CACU_SIGN_W_GPU(params->s_data["real_w"], params->s_bin_data["w"],output_channel, kernel_size*kernel_size*channel);
 
-		CACU_SUM_SIZE_ABS_GPU(params->data["real_w"],output_channel,
+		CACU_SUM_SIZE_ABS_GPU(params->s_data["real_w"],output_channel,
 				kernel_size * kernel_size * channel,kernel_size * kernel_size * channel,1,
-				params->data["a"]);
+				params->s_data["a"]);
 
-		CACU_SCALE_GPU_A(params->data["a"],(float_t) 1.0 / (kernel_size * kernel_size * channel),output_channel,output_channel,
+		CACU_SCALE_GPU_A(params->data["a"],(float_t) 1.0 / (kernel_size * kernel_size * channel),output_channel,1,
 				params->data["a"], 0);
-
 	}
 
 #else
@@ -521,15 +524,17 @@ private:
 	void resigned_weights() {
 
 		//mean center
-//		for (int i = 0; i < output_channel; i++) {
-//			CACU_SUM_SIZE_CPU(params->data["real_w"][i],
-//					channel * kernel_size * kernel_size, means->data[i]);
-//
-//			CACU_SCALE_CPU(means->data[i],(float_t) (1.0 / channel * kernel_size * kernel_size),	means->data[i],0);
-//		}
-//
-//		CACU_SUB_CPU(params->data["real_w"], means->data,
-//				params->data["real_w"]);
+		for (int i = 0; i < output_channel; i++) {
+			CACU_SUM_SIZE_CPU(params->data["real_w"][i],
+					channel * kernel_size * kernel_size, means->data[i]);
+
+			CACU_SCALE_CPU(means->data[i],
+					(float_t) (1.0 / channel * kernel_size * kernel_size),
+					means->data[i], 0);
+		}
+
+		CACU_SUB_CPU(params->data["real_w"], means->data,
+				params->data["real_w"]);
 
 		BIT_CACU_SIGN_W(params->data["real_w"], params->bin_data["w"]);
 
