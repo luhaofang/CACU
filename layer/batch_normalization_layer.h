@@ -140,29 +140,29 @@ public:
 			}
 		}
 
-//		printf("%s: ",layer_name.c_str());
-//		cudaError_t res;
-//		vec_t test_data(1);
-//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["mean"]),
-//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//		CHECK(res);
+		printf("%s: ",layer_name.c_str());
+		cudaError_t res;
+		vec_t test_data(1);
+		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["mean"]),
+				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+
+		printf("%s:%f,","mean",test_data[0]);
+		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["var"]),
+				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+		printf("%s:%f,","var",test_data[0]);
+
+		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["smean"]),
+				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+		printf("%s:%f,","smean",test_data[0]);
 //
-//		printf("%s:%f,","mean",test_data[0]);
-//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["var"]),
-//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//		CHECK(res);
-//		printf("%s:%f,","var",test_data[0]);
-//
-//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["smean"]),
-//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//		CHECK(res);
-//		printf("%s:%f,","smean",test_data[0]);
-////
-//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["svar"]),
-//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//		CHECK(res);
-//		printf("%s:%f,","svar",test_data[0]);
-//		printf("\n");
+		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["svar"]),
+				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+		CHECK(res);
+		printf("%s:%f,","svar",test_data[0]);
+		printf("\n");
 	}
 
 	virtual const void backward(layer_param *&v) override

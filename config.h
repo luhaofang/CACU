@@ -29,19 +29,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define LEARN_RATE   0.001
 
-#define BATCH_SIZE   32
+#define BATCH_SIZE   48
 
-#define WEIGHT_DECAY 0.004
+#define WEIGHT_DECAY 0.0001
 
 #define MOMENTUM     0.9
 
 #define TEST_ITER    10
 
-#define STEP_SIZE	 4000
+#define STEP_SIZE	 40000
 
-#define CACU_MAX_ITER	 5000
+#define CACU_MAX_ITER	 40000
 
-#define SNAPSHOT    5000
+#define SNAPSHOT    10000
 
 #define GPU_MODE  1
 

@@ -505,9 +505,9 @@ private:
 	void resigned_weights()
 	{
 		//mean center
-		CACU_MEAN_GPU(params->s_data["real_w"],output_channel,channel*kernel_size*kernel_size,means->s_data);
-
-		CACU_SUB_GPU_D(params->s_data["real_w"],means->s_data,output_channel,channel*kernel_size*kernel_size,params->s_data["real_w"]);
+//		CACU_MEAN_GPU(params->s_data["real_w"],output_channel,channel*kernel_size*kernel_size,means->s_data);
+//
+//		CACU_SUB_GPU_D(params->s_data["real_w"],means->s_data,output_channel,channel*kernel_size*kernel_size,params->s_data["real_w"]);
 
 		BIT_CACU_SIGN_W_GPU(params->s_data["real_w"], params->s_bin_data["w"],output_channel, kernel_size*kernel_size*channel);
 

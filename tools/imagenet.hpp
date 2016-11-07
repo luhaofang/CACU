@@ -176,8 +176,8 @@ void readimage2vec(mycnn::char_t filepath, vec_t &data, vec_t &mean) {
 	mycnn::float_t* mp = &mean[0];
 	mycnn::float_t* sp = &data[0];
 	Mat src = imread((filepath), IMREAD_COLOR);
-	unsigned int height = 224;
-	unsigned int width = 224;
+	unsigned int height = src.rows;
+	unsigned int width = src.cols;
 
 	for (unsigned int y = 0; y < height; y++)
 		for (unsigned int x = 0; x < width; x++) {
@@ -188,6 +188,8 @@ void readimage2vec(mycnn::char_t filepath, vec_t &data, vec_t &mean) {
 					y, x)[1] - *(mp + (y * height + x) * 3 + 1));
 			*(sp + (y * height + x) * 3 + 2) = ((mycnn::float_t) src.at<Vec3b>(
 					y, x)[2] - *(mp + (y * height + x) * 3 + 2));
+
+			//printf("%f,%f,%f\n",*(sp + (y * height + x) * 3),*(sp + (y * height + x) * 3 + 1),*(sp + (y * height + x) * 3 + 2));
 		}
 
 }
@@ -353,15 +355,15 @@ void train_test() {
 
 		//int index = 0;
 		//vec_t image_data;
-//		if (i % TEST_ITER == 0) {
-//			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_data,
-//					net->net_[net->layers[0]]->bottoms[0]->s_data);
-//
-//			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_labels,
-//					net->net_["softmax"]->bottoms[1]->s_data);
-//
-//			net->predict();
-//
+		if (i % TEST_ITER == 0) {
+			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, input_data, mean,
+					net->net_[net->layers[0]]->bottoms[0]);
+
+			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, labels,
+					net->net_["softmax"]->bottoms[1]);
+
+			net->predict();
+		}
 //			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, input_data,
 //					net->net_[net->layers[0]]->bottoms[0]->s_data);
 //

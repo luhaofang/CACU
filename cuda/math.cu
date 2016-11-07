@@ -35,7 +35,7 @@ using namespace std;
 
 #define CHECK(res) if(res!=cudaSuccess){exit(-1);}
 
-#define BLOCKNUM 512
+#define BLOCKNUM 1024
 #define THREADNUM 512
 
 __global__ void _k_CACU_SUM_SIZE_GPU(float_t **data, int num, int sum_size,
@@ -1026,8 +1026,8 @@ __global__ void _k_CACU_DECONV_W_BIN_GPU(float_t *data, float_t *top_diff,
 			}
 		if (abs(out_data[i]) > 1)
 			crop = 0.0;
-		out_data[i] *= (((float_t) (1.0 / kernel_length) + a[data_row] * crop)
-				* ((float_t) kernel_length - (float_t) (1.0)));
+		out_data[i] *= (((float_t) (1.0 / kernel_length) + a[data_row] * crop));
+				//* ((float_t) kernel_length - (float_t) (1.0)));
 	}
 }
 

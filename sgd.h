@@ -162,19 +162,19 @@ private:
 			for (_it = it->second->data.begin(); _it != it->second->data.end();
 					++_it) {
 				char_t param_name = _it->first;
-				if (param_name == "w" )
+				if (param_name == "w" || param_name == "real_w" )
 				local_rate = this->lr * net->net_[layer_name]->lr_w;
 				else
 				local_rate = this->lr * net->net_[layer_name]->lr_b;
 //
-//				vec_t test_data(1);
-//
-//				res = cudaMemcpy((void*) (&test_data[0]), (void*) (data_v[layer_name]->s_data[param_name]),
-//						test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//				CHECK(res);
-//				printf("%s_%s: ",layer_name.c_str(),param_name.c_str());
-//
-//				printf("dw_%.10f,",test_data[0]);
+				vec_t test_data(1);
+
+				res = cudaMemcpy((void*) (&test_data[0]), (void*) (data_v[layer_name]->s_data[param_name]),
+						test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+				CHECK(res);
+				printf("%s_%s: ",layer_name.c_str(),param_name.c_str());
+
+				printf("dw_%.10f,",test_data[0]);
 
 				CACU_SCALE_GPU_A(data_acc_v[layer_name]->data[param_name],momentum,data_acc_v[layer_name]->param_outnum[param_name],
 						data_acc_v[layer_name]->param_dim[param_name],data_acc_v[layer_name]->data[param_name],0);
@@ -192,19 +192,19 @@ private:
 				CACU_AXBY_GPU(net->net_[layer_name]->params->data[param_name],(float_t)1.0,data_acc_v[layer_name]->param_outnum[param_name],
 						data_acc_v[layer_name]->param_dim[param_name],data_acc_v[layer_name]->data[param_name],(float_t)(-1.0),net->net_[layer_name]->params->data[param_name]);
 
-//				res = cudaMemcpy((void*) (&test_data[0]), (void*) (data_acc_v[layer_name]->s_data[param_name]),
-//						test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//				CHECK(res);
-//
-//				printf("v_%.10f,",test_data[0]);
-//
-//				res = cudaMemcpy((void*) (&test_data[0]), (void*) (net->net_[layer_name]->params->s_data[param_name]),
-//						test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//				CHECK(res);
-//
-//				printf("w_%.10f,",test_data[0]);
-//
-//				printf("\n");
+				res = cudaMemcpy((void*) (&test_data[0]), (void*) (data_acc_v[layer_name]->s_data[param_name]),
+						test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+				CHECK(res);
+
+				printf("v_%.10f,",test_data[0]);
+
+				res = cudaMemcpy((void*) (&test_data[0]), (void*) (net->net_[layer_name]->params->s_data[param_name]),
+						test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+				CHECK(res);
+
+				printf("w_%.10f,",test_data[0]);
+
+				printf("\n");
 
 			}
 		}

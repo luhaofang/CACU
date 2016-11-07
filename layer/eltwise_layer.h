@@ -61,8 +61,8 @@ public:
 
 	virtual const void backward(layer_param *&v) override
 	{
-		copy_data_gpu(tops[0]->diff, bottoms[0]->diff, tops[0]->num, output_dim*output_dim*output_channel, 1);
-		copy_data_gpu(tops[0]->diff, bottoms[1]->diff, tops[0]->num, output_dim*output_dim*output_channel, 1);
+		copy_data_gpu(tops[0]->diff, bottoms[0]->diff, tops[0]->num, output_dim*output_dim*output_channel, 0);
+		copy_data_gpu(tops[0]->diff, bottoms[1]->diff, tops[0]->num, output_dim*output_dim*output_channel, 0);
 	}
 
 	virtual const void save(std::ostream& os) override {
@@ -194,7 +194,7 @@ public:
 		////////////////////////////////////////
 
 		_param_outnum.push_back(channel);
-		_param_dim.push_back(this->input_dim);
+		_param_dim.push_back(input_dim);
 
 		////////////////////////////////////////
 
