@@ -54,6 +54,7 @@ using namespace cv;
 #include "../utils.h"
 
 #include "../model/resnet18.h"
+#include "../model/resnet.h"
 
 using namespace mycnn;
 
@@ -176,8 +177,8 @@ void readimage2vec(mycnn::char_t filepath, vec_t &data, vec_t &mean) {
 	mycnn::float_t* mp = &mean[0];
 	mycnn::float_t* sp = &data[0];
 	Mat src = imread((filepath), IMREAD_COLOR);
-	unsigned int height = src.rows;
-	unsigned int width = src.cols;
+	unsigned int height = 224;
+	unsigned int width = 224;
 
 	for (unsigned int y = 0; y < height; y++)
 		for (unsigned int x = 0; x < width; x++) {
@@ -188,8 +189,6 @@ void readimage2vec(mycnn::char_t filepath, vec_t &data, vec_t &mean) {
 					y, x)[1] - *(mp + (y * height + x) * 3 + 1));
 			*(sp + (y * height + x) * 3 + 2) = ((mycnn::float_t) src.at<Vec3b>(
 					y, x)[2] - *(mp + (y * height + x) * 3 + 2));
-
-			//printf("%f,%f,%f\n",*(sp + (y * height + x) * 3),*(sp + (y * height + x) * 3 + 1),*(sp + (y * height + x) * 3 + 2));
 		}
 
 }
@@ -262,18 +261,17 @@ void read_mean(string meanfile, vec_t &mean) {
 #if GPU_MODE
 
 void getdata(unsigned int count, unsigned int start,
-		vector<mycnn::char_t> &data_blob, vec_t &mean,
-		blob *&out_data) {
+		vector<mycnn::char_t> &data_blob, vec_t &mean, blob *&out_data) {
 
 	assert(out_data->num == count);
 	assert(out_data->channel * out_data->dim * out_data->dim == ImageNBytes);
 
 	cudaError_t res;
 	mycnn::char_t dirpath =
-				"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_img_train_224/";
+			"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_img_train_224/";
 	start = start % data_blob.size();
 
-	vec_t h_data(count*ImageNBytes);
+	vec_t h_data(count * ImageNBytes);
 	vec_t data(ImageNBytes);
 
 	mycnn::float_t *start_data = &h_data[0];
@@ -283,16 +281,51 @@ void getdata(unsigned int count, unsigned int start,
 	for (unsigned int i = start, c = 0; c < count; c++, i++) {
 		if (i >= data_blob.size())
 			i = 0;
-		readimage2vec(dirpath+data_blob[i], data, mean);
+		readimage2vec(dirpath + data_blob[i], data, mean);
 		start_data = &h_data[0] + c * ImageNBytes;
-		for(int j = 0; j < ImageNBytes ; j ++){
+		for (int j = 0; j < ImageNBytes; j++) {
 			*(start_data + j) = *(sp + j);
 		}
 	}
 
 	res = cudaMemcpy((void*) (out_data->s_data), (void*) (&h_data[0]),
-			h_data.size() * sizeof(mycnn::float_t),
-			cudaMemcpyHostToDevice);
+			h_data.size() * sizeof(mycnn::float_t), cudaMemcpyHostToDevice);
+	CHECK(res);
+
+	vec_t().swap(h_data);
+	vec_t().swap(data);
+}
+
+void gettestdata(unsigned int count, unsigned int start,
+		vector<mycnn::char_t> &data_blob, vec_t &mean, blob *&out_data) {
+
+	assert(out_data->num == count);
+	assert(out_data->channel * out_data->dim * out_data->dim == ImageNBytes);
+
+	cudaError_t res;
+	mycnn::char_t dirpath =
+			"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_bbox_val_v3/val_224/";
+	start = start % data_blob.size();
+
+	vec_t h_data(count * ImageNBytes);
+	vec_t data(ImageNBytes);
+
+	mycnn::float_t *start_data = &h_data[0];
+	mycnn::float_t *sp = &data[0];
+	int start_index;
+
+	for (unsigned int i = start, c = 0; c < count; c++, i++) {
+		if (i >= data_blob.size())
+			i = 0;
+		readimage2vec(dirpath + data_blob[i], data, mean);
+		start_data = &h_data[0] + c * ImageNBytes;
+		for (int j = 0; j < ImageNBytes; j++) {
+			*(start_data + j) = *(sp + j);
+		}
+	}
+
+	res = cudaMemcpy((void*) (out_data->s_data), (void*) (&h_data[0]),
+			h_data.size() * sizeof(mycnn::float_t), cudaMemcpyHostToDevice);
 	CHECK(res);
 
 	vec_t().swap(h_data);
@@ -329,6 +362,7 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 void train_test() {
 
 	network *net = resnet18();
+	//network *net = resnet18_xnor();
 	//net->load("/home/seal/dataset/experiment/cifar10/test_myquick_5000_xnor_leaky.model");
 
 	vector<char_t> input_data;
@@ -350,20 +384,28 @@ void train_test() {
 		label = atof(split(line, "\t")[1].c_str());
 		labels.push_back(vec_t(1, label));
 	}
+	is.close();
+	std::ifstream _is("/home/seal/dataset/imagenet/train_img_val.txt");
+	while (getline(_is, line)) {
+		test_data.push_back(split(line, "\t")[0]);
+		label = atof(split(line, "\t")[1].c_str());
+		test_labels.push_back(vec_t(1, label));
+	}
+	_is.close();
 
 	for (unsigned int i = 1; i <= CACU_MAX_ITER; i++) {
 
 		//int index = 0;
 		//vec_t image_data;
 		if (i % TEST_ITER == 0) {
-			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, input_data, mean,
+			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_data, mean,
 					net->net_[net->layers[0]]->bottoms[0]);
 
-			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, labels,
+			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_labels,
 					net->net_["softmax"]->bottoms[1]);
 
 			net->predict();
-		}
+//
 //			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, input_data,
 //					net->net_[net->layers[0]]->bottoms[0]->s_data);
 //
@@ -374,7 +416,7 @@ void train_test() {
 //
 //			//s.train(i);
 //
-//		}
+		}
 
 		getdata(BATCH_SIZE, (i - 1) * BATCH_SIZE, input_data, mean,
 				net->net_[net->layers[0]]->bottoms[0]);

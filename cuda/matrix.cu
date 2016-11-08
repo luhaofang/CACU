@@ -150,6 +150,7 @@ __global__ void _k_copy_unpadding_data_gpu(float_t *data_input,
 		row = data_col / (input_dim * channel);
 		//col = (data_col % (input_dim * channel)) / channel;
 		col = (data_col / channel) % input_dim;
+		data_output[j] = 0.0;
 		in_start = ((row + pad) * output_dim + (col + pad)) * channel
 				+ data_col % channel;
 		data_output[j] = data_input[data_row * indata_length + in_start];

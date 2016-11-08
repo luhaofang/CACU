@@ -43,6 +43,7 @@ public:
 		this->channel = channel;
 		this->input_dim = input_dim;
 		this->output_channel = output_channel;
+		this->kernel_size = input_dim;
 		this->phrase = phrase;
 		this->set_lr_w(lr_w);
 		this->set_lr_b(lr_b);

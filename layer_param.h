@@ -290,8 +290,40 @@ public:
 						CHECK(res);
 
 						vec_t().swap(a);
+						break;
 					}
-					break;
+					case msra:
+					{
+
+						vec_t a;
+						for (int len = 0; len < it->second * _pPARAMS[1][it->first]; len++) {
+							a.push_back(r->gaussrand(_pVALUE[it->first]));
+						}
+
+						float_t *d_data;
+						float_t **h_data = (float_t **)malloc(it->second* sizeof(float_t*));
+
+						res = cudaMalloc((void**) (&data[it->first]), it->second * sizeof(float_t*));
+						CHECK(res);
+						res = cudaMalloc((void**) (&d_data),it->second * _pPARAMS[1][it->first] * sizeof(float_t));
+						CHECK(res);
+
+						res = cudaMemcpy((void*) (d_data), (void*) (&a[0]),
+								it->second * _pPARAMS[1][it->first] * sizeof(float_t), cudaMemcpyHostToDevice);
+
+						s_data[it->first] = d_data;
+
+						for(int i =0; i < it->second; i++)
+						{
+							h_data[i] = d_data + i * _pPARAMS[1][it->first];
+						}
+						res = cudaMemcpy((void*) (data[it->first]), (void*) (h_data),
+								it->second * sizeof(float_t*), cudaMemcpyHostToDevice);
+						CHECK(res);
+
+						vec_t().swap(a);
+						break;
+					}
 				}
 			}
 			else
@@ -549,6 +581,16 @@ public:
 						}
 						_param.push_back(a);
 					}
+					break;
+				case msra:
+					for (int num = 0; num < it->second; num++) {
+						vec_t a;
+						for (int len = 0; len < _pPARAMS[1][it->first]; len++) {
+							a.push_back(r->gaussrand(_pVALUE[it->first]));
+						}
+						_param.push_back(a);
+					}
+					break;
 				}
 			} else {
 				for (int num = 0; num < it->second; num++) {

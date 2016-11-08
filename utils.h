@@ -52,7 +52,7 @@ namespace mycnn {
 #define CHECK(res) if(res!=cudaSuccess){printf("[cuda error  %d]",res);exit(-1);}
 
 enum param_init_type {
-	constant, xavier, gaussian
+	constant, xavier, gaussian, msra
 };
 
 enum type {

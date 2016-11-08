@@ -13,7 +13,7 @@ network* cifar_myquick_xnor(type phrase = train) {
 	static network net;
 	net.phrase = phrase;
 
-	int channel = 128;
+	int channel = 64;
 
 	conv_layer *cl1 = new conv_layer("cl1", 32,   //input_dim
 			3,	   //channel

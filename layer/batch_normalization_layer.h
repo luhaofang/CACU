@@ -140,29 +140,29 @@ public:
 			}
 		}
 
-		printf("%s: ",layer_name.c_str());
-		cudaError_t res;
-		vec_t test_data(1);
-		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["mean"]),
-				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-		CHECK(res);
-
-		printf("%s:%f,","mean",test_data[0]);
-		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["var"]),
-				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-		CHECK(res);
-		printf("%s:%f,","var",test_data[0]);
-
-		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["smean"]),
-				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-		CHECK(res);
-		printf("%s:%f,","smean",test_data[0]);
+//		printf("%s: ",layer_name.c_str());
+//		cudaError_t res;
+//		vec_t test_data(1);
+//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["mean"]),
+//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+//		CHECK(res);
 //
-		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["svar"]),
-				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-		CHECK(res);
-		printf("%s:%f,","svar",test_data[0]);
-		printf("\n");
+//		printf("%s:%f,","mean",test_data[0]);
+//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["var"]),
+//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+//		CHECK(res);
+//		printf("%s:%f,","var",test_data[0]);
+//
+//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["smean"]),
+//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+//		CHECK(res);
+//		printf("%s:%f,","smean",test_data[0]);
+////
+//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (storage_data->s_data["svar"]),
+//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
+//		CHECK(res);
+//		printf("%s:%f,","svar",test_data[0]);
+//		printf("\n");
 	}
 
 	virtual const void backward(layer_param *&v) override
@@ -192,14 +192,6 @@ public:
 		//calculate dl/shift
 		CACU_SUM_GPU_B(tops[0]->diff,tops[0]->num,input_dim*input_dim*channel, channel,v->s_data["shift"]);
 
-//		cudaError_t res;
-//		vec_t test_data(32);
-//		res = cudaMemcpy((void*) (&test_data[0]), (void*) (bottoms[0]->s_diff),
-//				test_data.size() * sizeof(float_t), cudaMemcpyDeviceToHost);
-//		CHECK(res);
-//		for(int i = 0; i < test_data.size(); i ++)
-//		printf("%d:%f,",i,test_data[i]);
-//		printf("\n");
 	}
 
 	virtual const void save(std::ostream& os) override {

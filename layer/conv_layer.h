@@ -94,7 +94,6 @@ public:
 		col2img_gpu(storage_data->s_data["col_data"], bottoms[0]->num, channel, input_dim+2*pad, kernel_size, stride, output_dim, storage_data->s_data["pad_data"]);
 
 		copy_unpadding_data_gpu(storage_data->s_data["pad_data"], bottoms[0]->num, input_dim, channel, pad, bottoms[0]->s_diff);
-
 	}
 
 	virtual const void save(std::ostream& os) override {

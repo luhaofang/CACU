@@ -60,6 +60,7 @@ public:
 
 	virtual const void backward(layer_param *&v) override
 	{
+
 		CACU_DE_ACTIVATION_RELU_GPU(storage_data->data["data"],bottoms[0]->num, input_dim*input_dim*channel, bottoms[0]->diff);
 	}
 

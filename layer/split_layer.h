@@ -62,12 +62,6 @@ public:
 
 	virtual const void backward(layer_param *&v) override
 	{
-//		CACU_SCALE_GPU_A(tops[0]->diff,(float_t) 0.5,bottoms[0]->num, input_dim*input_dim*channel,
-//				tops[0]->diff, 0);
-//
-//		CACU_SCALE_GPU_A(tops[1]->diff,(float_t) 0.5,bottoms[0]->num, input_dim*input_dim*channel,
-//				tops[1]->diff, 0);
-
 		CACU_SUM_GPU_D(tops[0]->diff, tops[1]->diff,bottoms[0]->num, input_dim*input_dim*channel,bottoms[0]->diff);
 	}
 
@@ -200,10 +194,10 @@ public:
 		////////////////////////////////////////
 
 		_param_outnum.push_back(channel);
-		_param_dim.push_back(input_dim);
+		_param_dim.push_back(this->input_dim);
 
 		_param_outnum.push_back(channel);
-		_param_dim.push_back(input_dim);
+		_param_dim.push_back(this->input_dim);
 
 		////////////////////////////////////////
 

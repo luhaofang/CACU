@@ -46,35 +46,11 @@ public:
 	}
 
 	float_t gaussrand(float_t std) {
-		static float_t V1, V2, S;
-		static int phase = 0;
-		float_t X;
-
-		if (phase == 0) {
-			do {
-				float_t U1 = (float_t) rand() / RAND_MAX;
-				float_t U2 = (float_t) rand() / RAND_MAX;
-
-				V1 = 2 * U1 - 1;
-				V2 = 2 * U2 - 1;
-				S = V1 * V1 + V2 * V2;
-			} while (S >= 1 || S == 0);
-
-			X = V1 * sqrt(-2 * log(S) / S);
-		} else
-			X = V2 * sqrt(-2 * log(S) / S);
-
-		phase = 1 - phase;
-
-		return X * std;
-	}
-
-	float_t sampleNormal(float_t std) {
 		float_t u = ((float_t) rand() / (RAND_MAX)) * 2 - 1;
 		float_t v = ((float_t) rand() / (RAND_MAX)) * 2 - 1;
 		float_t r = u * u + v * v;
 		if (r == 0 || r > 1)
-			return sampleNormal(std);
+			return gaussrand(std);
 		float_t c = sqrt(-2 * log(r) / r);
 		return u * c * std;
 	}

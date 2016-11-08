@@ -162,7 +162,7 @@ private:
 			for (_it = it->second->data.begin(); _it != it->second->data.end();
 					++_it) {
 				char_t param_name = _it->first;
-				if (param_name == "w" || param_name == "real_w" )
+				if (param_name == "w" )
 				local_rate = this->lr * net->net_[layer_name]->lr_w;
 				else
 				local_rate = this->lr * net->net_[layer_name]->lr_b;
