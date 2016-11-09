@@ -55,10 +55,6 @@ public:
 	virtual const void forward() override
 	{
 
-		CACU_RESET_DATA_GPU(mean->data,1,channel);
-		CACU_RESET_DATA_GPU(var->data,1,channel);
-		CACU_RESET_DATA_GPU(std->data,1,channel);
-
 		float_t m = (float_t)BATCH_SIZE*input_dim*input_dim;
 		float_t bias_correction_factor = m > (float_t)1.0 ? (m) / (m - (float_t)1.0) : (float_t)1.0;
 
@@ -73,23 +69,23 @@ public:
 					bottoms[0]->num, input_dim*input_dim*channel, channel, storage_data->s_data["var"]);
 
 			//unbiased estimate
-			CACU_SCALE_GPU_A(storage_data->data["var"], (float_t(1) - moving_average_fraction)*bias_correction_factor, 1,channel, var->data, 0);
+			CACU_SCALE_GPU_A(storage_data->data["var"], (float_t(1) - moving_average_fraction)*bias_correction_factor, 1,channel, storage_data->data["_var"], 0);
 
 			CACU_SCALE_GPU_A(storage_data->data["smean"], moving_average_fraction, 1,channel , storage_data->data["smean"], 0);
-			CACU_SCALE_GPU_A(storage_data->data["mean"], (float_t(1) - moving_average_fraction),1, channel, mean->data, 0);
-			CACU_SUM_GPU_D(storage_data->data["smean"], mean->data,1,channel, storage_data->data["smean"]);
+			CACU_SCALE_GPU_A(storage_data->data["mean"], (float_t(1) - moving_average_fraction),1, channel, storage_data->data["_mean"], 0);
+			CACU_SUM_GPU_D(storage_data->data["smean"], storage_data->data["_mean"],1,channel, storage_data->data["smean"]);
 
 			CACU_SCALE_GPU_A(storage_data->data["svar"], moving_average_fraction,1, channel, storage_data->data["svar"], 0);
-			CACU_SUM_GPU_D(storage_data->data["svar"], var->data,1,channel, storage_data->data["svar"]);
+			CACU_SUM_GPU_D(storage_data->data["svar"], storage_data->data["_var"],1,channel, storage_data->data["svar"]);
 
 			//caculate std
-			CACU_SUM_GPU_D(storage_data->data["var"], _epsilon->data,1, channel,std->data);
-			CACU_SQRT_GPU(std->data,1,channel, std->data);
+			CACU_SUM_GPU_D(storage_data->data["var"], storage_data->data["_epsilon"],1, channel,storage_data->data["_std"]);
+			CACU_SQRT_GPU(storage_data->data["_std"],1,channel, storage_data->data["_std"]);
 
 			CACU_SUB_GPU(bottoms[0]->data, storage_data->s_data["mean"], bottoms[0]->num,
 					input_dim*input_dim*channel, channel, tops[0]->data);
 
-			CACU_DIVISION_GPU(tops[0]->data,std->s_data, tops[0]->num,
+			CACU_DIVISION_GPU(tops[0]->data,storage_data->s_data["_std"], tops[0]->num,
 					output_dim*output_dim*channel, channel, tops[0]->data);
 
 			CACU_SCALE_GPU(tops[0]->data, params->s_data["scale"], tops[0]->num,output_dim*output_dim*channel, channel, tops[0]->data);
@@ -100,13 +96,13 @@ public:
 		else {
 			if (use_global_stats) {
 				//caculate std
-				CACU_SUM_GPU_D(storage_data->data["svar"], _epsilon->data,1, channel,std->data);
-				CACU_SQRT_GPU(std->data,1,channel, std->data);
+				CACU_SUM_GPU_D(storage_data->data["svar"], storage_data->data["_epsilon"],1, channel,storage_data->data["_std"]);
+				CACU_SQRT_GPU(storage_data->data["_std"],1,channel, storage_data->data["_std"]);
 
 				CACU_SUB_GPU(bottoms[0]->data, storage_data->s_data["smean"], bottoms[0]->num,
 						input_dim*input_dim*channel, channel, tops[0]->data);
 
-				CACU_DIVISION_GPU(tops[0]->data,std->s_data, tops[0]->num,
+				CACU_DIVISION_GPU(tops[0]->data,storage_data->s_data["_std"], tops[0]->num,
 						output_dim*output_dim*channel, channel, tops[0]->data);
 
 				CACU_SCALE_GPU(tops[0]->data, params->s_data["scale"], tops[0]->num,output_dim*output_dim*channel, channel, tops[0]->data);
@@ -125,13 +121,13 @@ public:
 							bottoms[0]->num, input_dim*input_dim*channel, channel, storage_data->s_data["var"]);
 				}
 				//caculate std
-				CACU_SUM_GPU_D(storage_data->data["var"], _epsilon->data,1, channel,std->data);
-				CACU_SQRT_GPU(std->data,1,channel, std->data);
+				CACU_SUM_GPU_D(storage_data->data["var"], storage_data->data["_epsilon"],1, channel,storage_data->data["_std"]);
+				CACU_SQRT_GPU(storage_data->data["_std"],1,channel, storage_data->data["_std"]);
 
 				CACU_SUB_GPU(bottoms[0]->data, storage_data->s_data["mean"], bottoms[0]->num,
 						input_dim*input_dim*channel, channel, tops[0]->data);
 
-				CACU_DIVISION_GPU(tops[0]->data,std->s_data, tops[0]->num,
+				CACU_DIVISION_GPU(tops[0]->data,storage_data->s_data["_std"], tops[0]->num,
 						output_dim*output_dim*channel, channel, tops[0]->data);
 
 				CACU_SCALE_GPU(tops[0]->data, params->s_data["scale"], tops[0]->num,output_dim*output_dim*channel, channel, tops[0]->data);
@@ -168,24 +164,21 @@ public:
 	virtual const void backward(layer_param *&v) override
 	{
 
-		CACU_RESET_DATA_GPU(dx_ba->data,bottoms[0]->num,channel*input_dim*input_dim);
-		CACU_RESET_DATA_GPU(d_std->data,1,channel);
-		CACU_RESET_DATA_GPU(d_mu->data,1,channel);
 		//caculate std
-		CACU_SUM_GPU_D(storage_data->data["var"], _epsilon->data,1, channel,std->data);
-		CACU_SQRT_GPU(std->data,1,channel, std->data);
+		CACU_SUM_GPU_D(storage_data->data["var"], storage_data->data["_epsilon"],1, channel,storage_data->data["_std"]);
+		CACU_SQRT_GPU(storage_data->data["_std"],1,channel, storage_data->data["_std"]);
 
 		//calculate dl/x_
-		CACU_SCALE_GPU(tops[0]->diff, params->s_data["scale"],tops[0]->num,input_dim*input_dim*channel, channel, dx_ba->data);
+		CACU_SCALE_GPU(tops[0]->diff, params->s_data["scale"],tops[0]->num,input_dim*input_dim*channel, channel, storage_data->data["dx_ba"]);
 
 		//calculate dl/std^2
-		CACU_ROU_GPU(bottoms[0]->data, dx_ba->data, storage_data->s_data["mean"], std->s_data, tops[0]->num,input_dim*input_dim*channel,channel, d_std->s_data);
+		CACU_ROU_GPU(bottoms[0]->data, storage_data->data["dx_ba"], storage_data->s_data["mean"], storage_data->s_data["_std"], tops[0]->num,input_dim*input_dim*channel,channel, storage_data->s_data["d_std"]);
 
 		//calculate dl/mu
-		CACU_MU_GPU(bottoms[0]->data, dx_ba->data, storage_data->s_data["mean"], std->s_data, d_std->s_data,tops[0]->num, input_dim*input_dim*channel ,channel, d_mu->s_data);
+		CACU_MU_GPU(bottoms[0]->data, storage_data->data["dx_ba"], storage_data->s_data["mean"], storage_data->s_data["_std"], storage_data->s_data["d_std"],tops[0]->num, input_dim*input_dim*channel ,channel, storage_data->s_data["d_mu"]);
 
 		//calculate dl/x
-		CACU_DX_GPU(bottoms[0]->data, dx_ba->data, storage_data->s_data["mean"], std->s_data, d_std->s_data, d_mu->s_data, tops[0]->num,input_dim*input_dim*channel,channel, bottoms[0]->diff);
+		CACU_DX_GPU(bottoms[0]->data, storage_data->data["dx_ba"], storage_data->s_data["mean"], storage_data->s_data["_std"], storage_data->s_data["d_std"], storage_data->s_data["d_mu"], tops[0]->num,input_dim*input_dim*channel,channel, bottoms[0]->diff);
 
 		//calculate dl/scale
 		CACU_SCALE_GPU_B(tops[0]->diff, tops[0]->data, tops[0]->num,input_dim*input_dim*channel, channel, v->s_data["scale"]);
@@ -293,17 +286,8 @@ public:
 				0.0);
 		set_data_gpu(storage_data->data["svar"], 1, channel,
 				1.0);
-
-		mean = new blob(1, channel, 1);
-		var = new blob(1, channel, 1);
-		std = new blob(1,channel,1);
-		_epsilon = new blob(1,channel,1,epsilon);
-
-		if(train == this->phrase) {
-			dx_ba = new blob(bottoms[0]->num, channel, input_dim);
-			d_std = new blob(1, channel, 1);
-			d_mu = new blob(1, channel, 1);
-		}
+		set_data_gpu(storage_data->data["_epsilon"], 1, channel,
+				epsilon);
 	}
 
 	virtual const int caculate_data_space() override {
@@ -339,10 +323,6 @@ public:
 	virtual const void forward() override
 	{
 
-		CACU_RESET_CPU(mean->data);
-		CACU_RESET_CPU(var->data);
-		CACU_RESET_CPU(std->data);
-
 		float_t m = (float_t)BATCH_SIZE*input_dim*input_dim;
 		float_t bias_correction_factor = m > (float_t)1.0 ? (m) / (m - (float_t)1.0) : (float_t)1.0;
 
@@ -355,22 +335,22 @@ public:
 			CACU_VARIANCE_CHANNEL_CPU(bottoms[0]->data, storage_data->data["mean"][0], channel, storage_data->data["var"][0]);
 
 			//unbiased estimate
-			CACU_SCALE_CPU(storage_data->data["var"][0], (float_t(1) - moving_average_fraction)*bias_correction_factor, var->data[0], 0);
+			CACU_SCALE_CPU(storage_data->data["var"][0], (float_t(1) - moving_average_fraction)*bias_correction_factor, storage_data->data["_var"][0], 0);
 
 			CACU_SCALE_CPU(storage_data->data["smean"][0], moving_average_fraction, storage_data->data["smean"][0], 0);
-			CACU_SCALE_CPU(storage_data->data["mean"][0], (float_t(1) - moving_average_fraction), mean->data[0], 0);
-			CACU_SUM_CPU(storage_data->data["smean"], mean->data, storage_data->data["smean"]);
+			CACU_SCALE_CPU(storage_data->data["mean"][0], (float_t(1) - moving_average_fraction), storage_data->data["_mean"][0], 0);
+			CACU_SUM_CPU(storage_data->data["smean"], storage_data->data["_mean"], storage_data->data["smean"]);
 
 			CACU_SCALE_CPU(storage_data->data["svar"][0], moving_average_fraction, storage_data->data["svar"][0], 0);
-			CACU_SUM_CPU(storage_data->data["svar"], var->data, storage_data->data["svar"]);
+			CACU_SUM_CPU(storage_data->data["svar"], storage_data->data["_var"], storage_data->data["svar"]);
 
 			//caculate std
-			CACU_SUM_CPU(storage_data->data["var"], _epsilon->data, std->data);
-			CACU_SQRT(std->data[0], std->data[0]);
+			CACU_SUM_CPU(storage_data->data["var"], storage_data->data["_epsilon"], storage_data->data["_std"]);
+			CACU_SQRT(storage_data->data["_std"][0], storage_data->data["_std"][0]);
 
 			CACU_SUB_CPU(bottoms[0]->data, storage_data->data["mean"][0], channel, tops[0]->data);
 
-			CACU_DIVISION_CPU(tops[0]->data, std->data[0], channel, tops[0]->data);
+			CACU_DIVISION_CPU(tops[0]->data, storage_data->data["_std"][0], channel, tops[0]->data);
 
 			CACU_SCALE_CPU(tops[0]->data, params->data["scale"][0], channel, tops[0]->data);
 
@@ -380,12 +360,12 @@ public:
 		else {
 			if (use_global_stats) {
 				//caculate std
-				CACU_SUM_CPU(storage_data->data["svar"], _epsilon->data, std->data);
-				CACU_SQRT(std->data[0], std->data[0]);
+				CACU_SUM_CPU(storage_data->data["svar"], storage_data->data["_epsilon"], storage_data->data["_std"]);
+				CACU_SQRT(storage_data->data["_std"][0], storage_data->data["_std"][0]);
 
 				CACU_SUB_CPU(bottoms[0]->data, storage_data->data["smean"][0], channel, tops[0]->data);
 
-				CACU_DIVISION_CPU(tops[0]->data, std->data[0], channel, tops[0]->data);
+				CACU_DIVISION_CPU(tops[0]->data, storage_data->data["_std"][0], channel, tops[0]->data);
 
 				CACU_SCALE_CPU(tops[0]->data, params->data["scale"][0], channel, tops[0]->data);
 
@@ -401,12 +381,12 @@ public:
 					CACU_VARIANCE_CHANNEL_CPU(bottoms[0]->data, storage_data->data["mean"][0], channel, storage_data->data["var"][0]);
 				}
 				//caculate std
-				CACU_SUM_CPU(storage_data->data["var"], _epsilon->data, std->data);
-				CACU_SQRT(std->data[0], std->data[0]);
+				CACU_SUM_CPU(storage_data->data["var"], storage_data->data["_epsilon"], storage_data->data["_std"]);
+				CACU_SQRT(storage_data->data["_std"][0], storage_data->data["_std"][0]);
 
 				CACU_SUB_CPU(bottoms[0]->data, storage_data->data["mean"][0], channel, tops[0]->data);
 
-				CACU_DIVISION_CPU(tops[0]->data, std->data[0], channel, tops[0]->data);
+				CACU_DIVISION_CPU(tops[0]->data, storage_data->data["_std"][0], channel, tops[0]->data);
 
 				CACU_SCALE_CPU(tops[0]->data, params->data["scale"][0], channel, tops[0]->data);
 
@@ -419,26 +399,21 @@ public:
 
 	virtual const void backward(layer_param *&v) override
 	{
-		CACU_RESET_CPU(dx_ba->data);
-		CACU_RESET_CPU(d_std->data);
-		CACU_RESET_CPU(d_mu->data);
-
-		CACU_RESET_CPU(std->data);
 
 		//calculate std
-		CACU_SUM_CPU(storage_data->data["var"], _epsilon->data, std->data);
-		CACU_SQRT(std->data[0], std->data[0]);
+		CACU_SUM_CPU(storage_data->data["var"], storage_data->data["_epsilon"], storage_data->data["_std"]);
+		CACU_SQRT(storage_data->data["_std"][0], storage_data->data["_std"][0]);
 
 		//calculate dl/x_
-		CACU_SCALE_CPU(tops[0]->diff, params->data["scale"][0], channel, dx_ba->data);
+		CACU_SCALE_CPU(tops[0]->diff, params->data["scale"][0], channel, storage_data->data["dx_ba"]);
 
 		//calculate dl/std^2
-		CACU_ROU_CPU(bottoms[0]->data, dx_ba->data, storage_data->data["mean"][0], std->data[0], channel, d_std->data[0]);
+		CACU_ROU_CPU(bottoms[0]->data, storage_data->data["dx_ba"], storage_data->data["mean"][0], storage_data->data["_std"][0], channel, storage_data->data["d_std"][0]);
 		//calculate dl/mu
-		CACU_MU_CPU(bottoms[0]->data, dx_ba->data, storage_data->data["mean"][0], std->data[0], d_std->data[0], channel, d_mu->data[0]);
+		CACU_MU_CPU(bottoms[0]->data, storage_data->data["dx_ba"], storage_data->data["mean"][0], storage_data->data["_std"][0], storage_data->data["d_std"][0], channel, storage_data->data["d_mu"][0]);
 
 		//calculate dl/x
-		CACU_DX_CPU(bottoms[0]->data, dx_ba->data, storage_data->data["mean"][0], std->data[0], d_std->data[0], d_mu->data[0], channel, bottoms[0]->diff);
+		CACU_DX_CPU(bottoms[0]->data, storage_data->data["dx_ba"], storage_data->data["mean"][0], storage_data->data["_std"][0], storage_data->data["d_std"][0], storage_data->data["d_mu"][0], channel, bottoms[0]->diff);
 
 		//calculate dl/scale
 		CACU_SCALE_CPU(tops[0]->diff, tops[0]->data, channel, v->data["scale"][0]);
@@ -514,20 +489,11 @@ public:
 
 		vector<vec_t> zeros(1, vec_t(channel, 0.0));
 		vector<vec_t> ones(1, vec_t(channel, 1.0));
+		vector<vec_t> ep(1,vec_t(channel, epsilon));
 
 		copy_data(zeros, storage_data->data["smean"], 0);
 		copy_data(ones, storage_data->data["svar"], 0);
-
-		mean = new blob(1, channel, 1);
-		var = new blob(1, channel, 1);
-		std = new blob(1,channel,1);
-		_epsilon = new blob(1,channel,1,epsilon);
-
-		if(train == this->phrase) {
-			dx_ba = new blob(bottoms[0]->num, channel, input_dim);
-			d_std = new blob(1, channel, 1);
-			d_mu = new blob(1, channel, 1);
-		}
+		copy_data(ep,storage_data->data["_epsilon"], 0)
 	}
 
 	virtual const int caculate_data_space() override {
@@ -641,6 +607,30 @@ public:
 		_param_outnum["var"] = 1;
 		_param_dim["var"] = channel;
 
+		_param_outnum["_var"] = 1;
+		_param_dim["_var"] = channel;
+
+		_param_outnum["_mean"] = 1;
+		_param_dim["_mean"] = channel;
+
+		_param_outnum["_std"] = 1;
+		_param_dim["_std"] = channel;
+
+		_param_outnum["_epsilon"] = 1;
+		_param_dim["_epsilon"] = channel;
+
+		if (train == phrase) {
+
+			_param_outnum["dx_ba"] = BATCH_SIZE;
+			_param_dim["dx_ba"] = channel * input_dim * input_dim;
+
+			_param_outnum["d_std"] = 1;
+			_param_dim["d_std"] = channel;
+
+			_param_outnum["d_mu"] = 1;
+			_param_dim["d_mu"] = channel;
+		}
+
 		////////////////////////////////////////
 
 		_pSTORAGE.push_back(_param_outnum);
@@ -657,26 +647,11 @@ public:
 	bool use_global_stats = false;
 	float_t moving_average_fraction = 0.9;
 
+	float_t epsilon = 0.00001;
+
 private:
 
-	float_t epsilon = (float_t) 0.00001;
-
-	blob *mean = NULL;
-	blob *var = NULL;
-	blob *std = NULL;
-	blob *_epsilon = NULL;
-	blob *dx_ba = NULL;
-	blob *d_std = NULL;
-	blob *d_mu = NULL;
-
 	void DELETE_DATA() {
-		delete mean;
-		delete var;
-		delete std;
-		delete _epsilon;
-		delete dx_ba;
-		delete d_std;
-		delete d_mu;
 
 	}
 

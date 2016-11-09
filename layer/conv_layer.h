@@ -172,7 +172,6 @@ public:
 
 		assert(bottoms[0]->channel == channel);
 		assert(bottoms[0]->dim == input_dim);
-
 		int sum = 0;
 		for (int i = 0; i < tops.size(); i++) {
 			if (tops[i]->num > 0) {

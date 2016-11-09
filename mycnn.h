@@ -58,4 +58,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "network.h"
 
-#include "sgd.h"
+#include "solver/sgd.h"

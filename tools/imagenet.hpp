@@ -55,11 +55,13 @@ using namespace cv;
 
 #include "../model/resnet18.h"
 #include "../model/resnet.h"
+#include "../model/alexnet.h"
 
 using namespace mycnn;
 
-const int ImageNBytes = 3 * 224 * 224;
-const int DataSize = 224 * 224;
+#define Size 227
+const int ImageNBytes = 3 * Size * Size;
+const int DataSize = Size * Size;
 
 #ifdef _WIN32
 
@@ -106,14 +108,15 @@ void readimage2vec(mycnn::char_t filepath, mycnn::float_t *&data, vec_t &mean)
 	Bitmap* bmp;
 
 	bmp = new Bitmap(StringToWString(line).c_str());
-
-	for (unsigned int y = 0; y < 224; y++)
-	for (unsigned int x = 0; x < 224; x++)
+	unsigned int height = bmp->GetHeight();
+	unsigned int width = bmp->GetWidth();
+	for (unsigned int y = 0; y < height; y++)
+	for (unsigned int x = 0; x < width; x++)
 	{
 		bmp->GetPixel(x, y, &color);
-		*(sp + (y * 224 + x) * 3) = ((mycnn::float_t)color.GetRed() - *(mp + (y * 224 + x) * 3));
-		*(sp + (y * 224 + x) * 3 + 1) = ((mycnn::float_t)color.GetGreen() - *(mp + (y * 224 + x) * 3 + 1));
-		*(sp + (y * 224 + x) * 3 + 2) = ((mycnn::float_t)color.GetBlue() - *(mp + (y * 224 + x) * 3 + 2));
+		*(sp + (y * height + x) * 3) = ((mycnn::float_t)color.GetRed() - *(mp + (y * height + x) * 3));
+		*(sp + (y * height + x) * 3 + 1) = ((mycnn::float_t)color.GetGreen() - *(mp + (y * height + x) * 3 + 1));
+		*(sp + (y * height + x) * 3 + 2) = ((mycnn::float_t)color.GetBlue() - *(mp + (y * height + x) * 3 + 2));
 	}
 	delete bmp;
 
@@ -136,13 +139,13 @@ void calculate_mean_dim(mycnn::char_t filepath, mycnn::char_t dirpath) {
 	{
 		bmp = new Bitmap(StringToWString(dirpath + line).c_str());
 
-		for (unsigned int y = 0; y < 224; y++)
-		for (unsigned int x = 0; x < 224; x++)
+		for (unsigned int y = 0; y < Size; y++)
+		for (unsigned int x = 0; x < Size; x++)
 		{
 			bmp->GetPixel(x, y, &color);
-			*(sp + (y * 224 + x) * 3) += ((mycnn::float_t)color.GetRed());
-			*(sp + (y * 224 + x) * 3 + 1) += ((mycnn::float_t)color.GetGreen());
-			*(sp + (y * 224 + x) * 3 + 2) += ((mycnn::float_t)color.GetBlue());
+			*(sp + (y * Size + x) * 3) += ((mycnn::float_t)color.GetRed());
+			*(sp + (y * Size + x) * 3 + 1) += ((mycnn::float_t)color.GetGreen());
+			*(sp + (y * Size + x) * 3 + 2) += ((mycnn::float_t)color.GetBlue());
 		}
 		delete bmp;
 		count += 1;
@@ -177,8 +180,8 @@ void readimage2vec(mycnn::char_t filepath, vec_t &data, vec_t &mean) {
 	mycnn::float_t* mp = &mean[0];
 	mycnn::float_t* sp = &data[0];
 	Mat src = imread((filepath), IMREAD_COLOR);
-	unsigned int height = 224;
-	unsigned int width = 224;
+	unsigned int height = src.rows;
+	unsigned int width = src.cols;
 
 	for (unsigned int y = 0; y < height; y++)
 		for (unsigned int x = 0; x < width; x++) {
@@ -268,7 +271,7 @@ void getdata(unsigned int count, unsigned int start,
 
 	cudaError_t res;
 	mycnn::char_t dirpath =
-			"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_img_train_224/";
+			"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_img_train_227/";
 	start = start % data_blob.size();
 
 	vec_t h_data(count * ImageNBytes);
@@ -304,7 +307,7 @@ void gettestdata(unsigned int count, unsigned int start,
 
 	cudaError_t res;
 	mycnn::char_t dirpath =
-			"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_bbox_val_v3/val_224/";
+			"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_bbox_val_v3/val_227/";
 	start = start % data_blob.size();
 
 	vec_t h_data(count * ImageNBytes);
@@ -361,7 +364,8 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 
 void train_test() {
 
-	network *net = resnet18();
+	network *net = alexnet_xnor();
+	//network *net = resnet18();
 	//network *net = resnet18_xnor();
 	//net->load("/home/seal/dataset/experiment/cifar10/test_myquick_5000_xnor_leaky.model");
 
@@ -374,7 +378,7 @@ void train_test() {
 	s.caculate_sgd_data_space();
 
 	vec_t mean(ImageNBytes);
-	read_mean("/home/seal/dataset/imagenet/train_list.meanfile", mean);
+	read_mean("/home/seal/dataset/imagenet/train_list_227.meanfile", mean);
 
 	std::ifstream is("/home/seal/dataset/imagenet/train_img.txt");
 	char_t line;
@@ -398,8 +402,8 @@ void train_test() {
 		//int index = 0;
 		//vec_t image_data;
 		if (i % TEST_ITER == 0) {
-			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_data, mean,
-					net->net_[net->layers[0]]->bottoms[0]);
+			gettestdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_data,
+					mean, net->net_[net->layers[0]]->bottoms[0]);
 
 			getdata(BATCH_SIZE, (i / TEST_ITER) * BATCH_SIZE, test_labels,
 					net->net_["softmax"]->bottoms[1]);

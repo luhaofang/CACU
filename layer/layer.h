@@ -132,8 +132,6 @@ public:
 									/ (kernel_size * kernel_size * channel
 											+ kernel_size * kernel_size
 													* output_channel));
-			printf("%s: %f\n", layer_name.c_str(),
-					sqrt((float_t) 2.0 / (input_dim * input_dim * channel)));
 		} else {
 			this->_pPARAMS_VALUE[pName] = (float_t) value;
 		}

@@ -74,6 +74,7 @@ network* alexnet_xnor(type phrase = train) {
 	bc_1a->bottoms << ba_1a->tops[0];	//for K
 	bc_1a->bottoms << ba_1a->bottoms[0];	//for real data
 	bc_1a->set_params_init_value("real_w", msra);
+	net << bc_1a;
 
 	max_pooling_layer *mp2 = new max_pooling_layer("pool2", 28,  //input_dim
 			256,   //channel
@@ -108,6 +109,7 @@ network* alexnet_xnor(type phrase = train) {
 	bc_1b->bottoms << ba_1b->tops[0];	//for K
 	bc_1b->bottoms << ba_1b->bottoms[0];	//for real data
 	bc_1b->set_params_init_value("real_w", msra);
+	net << bc_1b;
 
 	batch_normalization_layer *bn_1c = new batch_normalization_layer("bn_1c",
 			14,    //input_dim
@@ -135,6 +137,7 @@ network* alexnet_xnor(type phrase = train) {
 	bc_1c->bottoms << ba_1c->tops[0];	//for K
 	bc_1c->bottoms << ba_1c->bottoms[0];	//for real data
 	bc_1c->set_params_init_value("real_w", msra);
+	net << bc_1c;
 
 	batch_normalization_layer *bn_1d = new batch_normalization_layer("bn_1d",
 			14,    //input_dim
@@ -162,6 +165,7 @@ network* alexnet_xnor(type phrase = train) {
 	bc_1d->bottoms << ba_1d->tops[0];	//for K
 	bc_1d->bottoms << ba_1d->bottoms[0];	//for real data
 	bc_1d->set_params_init_value("real_w", msra);
+	net << bc_1d;
 
 	max_pooling_layer *mp3 = new max_pooling_layer("pool3", 14,  //input_dim
 			256,   //channel
@@ -196,6 +200,7 @@ network* alexnet_xnor(type phrase = train) {
 	bc_fc1->bottoms << ba_fc1->tops[0];	//for K
 	bc_fc1->bottoms << ba_fc1->bottoms[0];	//for real data
 	bc_fc1->set_params_init_value("real_w", msra);
+	net << bc_fc1;
 
 	batch_normalization_layer *bn_fc2 = new batch_normalization_layer("bn_fc2",
 			1,    //input_dim
@@ -205,7 +210,7 @@ network* alexnet_xnor(type phrase = train) {
 	bn_fc2->set_params_init_value("shift", constant, 0.0);
 	net << bn_fc2;
 
-	bin_activation_layer *ba_fc2 = new bin_activation_layer("ba_fc2", 7, //input_dim
+	bin_activation_layer *ba_fc2 = new bin_activation_layer("ba_fc2", 1, //input_dim
 			4096,	   //channel
 			1,	   //kernel_size
 			1,	   //stride
@@ -213,7 +218,7 @@ network* alexnet_xnor(type phrase = train) {
 	ba_fc2->bottoms << bn_fc2->tops[0];
 	net << ba_fc2;
 
-	bin_conv_layer *bc_fc2 = new bin_conv_layer("bc_fc2", 7,    //input_dim
+	bin_conv_layer *bc_fc2 = new bin_conv_layer("bc_fc2", 1,    //input_dim
 			4096,	   //channel
 			4096,   //output_channel
 			1,	   //kernel_size
@@ -223,6 +228,7 @@ network* alexnet_xnor(type phrase = train) {
 	bc_fc2->bottoms << ba_fc2->tops[0];	//for K
 	bc_fc2->bottoms << ba_fc2->bottoms[0];	//for real data
 	bc_fc2->set_params_init_value("real_w", msra);
+	net << bc_fc2;
 
 //	inner_product_layer *ip1 = new inner_product_layer("ip1", 7,    //input_dim
 //			256,   //channel

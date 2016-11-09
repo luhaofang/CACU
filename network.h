@@ -57,6 +57,7 @@ public:
 	}
 
 	void alloc_network_space() {
+
 		//alloc calculating space
 		ALLOC_DATA_SPACE();
 		//alloc storaged data space
@@ -65,7 +66,6 @@ public:
 		ALLOC_PARAM_DATA_SPACE();
 		//alloc temporary data space
 		LAYER_SETUP();
-		cout << ": fuck" << std::endl;
 	}
 
 #if GPU_MODE

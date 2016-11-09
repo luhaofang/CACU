@@ -39,10 +39,10 @@ int main() {
 
 	mycnn::char_t filepath = "/home/seal/dataset/imagenet/train_list.txt";
 	mycnn::char_t dirpath =
-			"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_img_train_224/";
+			"/home/seal/dataset/imagenet/data/ILSVRC2012/ILSVRC2012_img_train_227/";
 	//testim2col();
-	//calculate_mean_dim(filepath, dirpath);
-	train_test();
+	calculate_mean_dim(filepath, dirpath);
+	//train_test();
 	//test_data();
 
 }

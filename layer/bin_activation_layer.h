@@ -62,17 +62,17 @@ public:
 
 		//sum by channel
 		CACU_SUM_ABS_GPU(bottoms[0]->data, bottoms[0]->num, input_dim*input_dim*channel,
-				input_dim*input_dim, channel, sum_k->data);
+				input_dim*input_dim, channel, storage_data->data["sum_k"]);
 
 		//mean by channel and scaled by 1.0/kernel_size*kernel_size
-		CACU_SCALE_GPU_A(sum_k->data,(float_t)1.0 / (channel*kernel_size*kernel_size),bottoms[0]->num ,input_dim*input_dim, sum_k->data, 0);
+		CACU_SCALE_GPU_A(storage_data->data["sum_k"],(float_t)1.0 / (channel*kernel_size*kernel_size),bottoms[0]->num ,input_dim*input_dim, storage_data->data["sum_k"], 0);
 
-		copy_padding_data_blob_gpu(sum_k->s_data, bottoms[0]->num, input_dim, 1, pad, sum_pad_k->s_data);
+		copy_padding_data_blob_gpu(storage_data->s_data["sum_k"], bottoms[0]->num, input_dim, 1, pad, storage_data->s_data["sum_pad_k"]);
 
 		//pad for convoluation
-		img2col_gpu(sum_pad_k->s_data, bottoms[0]->num, 1, input_dim+2*pad, kernel_size, stride, output_dim, ks->s_data);
+		img2col_gpu(storage_data->s_data["sum_pad_k"], bottoms[0]->num, 1, input_dim+2*pad, kernel_size, stride, output_dim, storage_data->s_data["ks"]);
 
-		CACU_SUM_SIZE_GPU(ks->data,bottoms[0]->num, (1 * kernel_size*kernel_size), output_dim*output_dim*kernel_size*kernel_size,
+		CACU_SUM_SIZE_GPU(storage_data->data["ks"],bottoms[0]->num, (1 * kernel_size*kernel_size), output_dim*output_dim*kernel_size*kernel_size,
 				output_dim*output_dim,tops[0]->data);
 
 		BIT_CACU_SIGN_GPU(bottoms[0]->data, bin_tops[0]->bin_data,bottoms[0]->num,input_dim*input_dim*channel);
@@ -82,9 +82,9 @@ public:
 	virtual const void backward(layer_param *&v) override
 	{
 		//caculate design(I)
-		BIT_CACU_DESIGN_GPU(bin_tops[0]->diff, df->data,bin_tops[0]->num,input_dim*input_dim*channel);
+		BIT_CACU_DESIGN_GPU(bin_tops[0]->diff, storage_data->data["df"],bin_tops[0]->num,input_dim*input_dim*channel);
 		//scaled by design(I)
-		CACU_SCALE_GPU_D(bin_tops[0]->diff, df->data,bin_tops[0]->num,input_dim*input_dim*channel, bottoms[0]->diff);
+		CACU_SCALE_GPU_D(bin_tops[0]->diff, storage_data->data["df"],bin_tops[0]->num,input_dim*input_dim*channel, bottoms[0]->diff);
 	}
 
 	virtual const void save(std::ostream& os) override {
@@ -96,11 +96,7 @@ public:
 	}
 
 	virtual const void setup() override {
-		sum_k = new blob(bottoms[0]->num, 1, input_dim);
-		sum_pad_k = new blob(bottoms[0]->num, 1, input_dim+2*pad);
-		ks = new blob(bottoms[0]->num, 1, output_dim*kernel_size);
-		if(train == phrase)
-		df = new blob(bottoms[0]->num, output_channel, input_dim);
+
 	}
 
 	virtual const int caculate_data_space() override {
@@ -137,16 +133,16 @@ public:
 	virtual const void forward() override
 	{
 		//sum by channel
-		CACU_SUM_ABS_CPU(bottoms[0]->data, channel, sum_k->data);
+		CACU_SUM_ABS_CPU(bottoms[0]->data, channel, storage_data->data["sum_k"]);
 		//mean by channel and scaled by 1.0/kernel_size*kernel_size
 		for (int num = 0; num < bottoms[0]->data.size(); num++) {
-			CACU_SCALE_CPU(sum_k->data[num], (float_t)1.0 / (channel*kernel_size*kernel_size), sum_k->data[num], 0);
+			CACU_SCALE_CPU(storage_data->data["sum_k"][num], (float_t)1.0 / (channel*kernel_size*kernel_size), storage_data->data["sum_k"][num], 0);
 		}
 		//pad for convoluation
-		img2col(sum_k->data, kernel_size, stride, pad, input_dim, output_dim, ks->data);
+		img2col(storage_data->data["sum_k"], kernel_size, stride, pad, input_dim, output_dim, storage_data->data["ks"]);
 
 		for (int num = 0; num < bottoms[0]->data.size(); num++) {
-			CACU_SUM_SIZE_CPU(ks->data[num], (1 * kernel_size*kernel_size), tops[0]->data[num]);
+			CACU_SUM_SIZE_CPU(storage_data->data["ks"][num], (1 * kernel_size*kernel_size), tops[0]->data[num]);
 		}
 
 		BIT_CACU_SIGN(bottoms[0]->data, bin_tops[0]->bin_data);
@@ -156,9 +152,9 @@ public:
 	virtual const void backward(layer_param *&v) override
 	{
 		//caculate design(I)
-		BIT_CACU_DESIGN(bin_tops[0]->diff, df->data);
+		BIT_CACU_DESIGN(bin_tops[0]->diff, storage_data->data["df"]);
 		//scaled by design(I)
-		CACU_SCALE_CPU(bin_tops[0]->diff, df->data, bottoms[0]->diff);
+		CACU_SCALE_CPU(bin_tops[0]->diff, storage_data->data["df"], bottoms[0]->diff);
 
 		//copy_data(bin_tops[0]->diff, bottoms[0]->diff, 0);
 
@@ -173,10 +169,7 @@ public:
 	}
 
 	virtual const void setup() override {
-		sum_k = new blob(bottoms[0]->num, 1, input_dim);
-		ks = new blob(bottoms[0]->num, 1, output_dim*kernel_size);
-		if(train == phrase)
-		df = new blob(BATCH_SIZE, output_channel, input_dim);
+
 	}
 
 	virtual const int caculate_data_space() override {
@@ -278,6 +271,24 @@ public:
 
 		//here to initial the layer's params size
 		////////////////////////////////////////
+		_param_outnum["sum_k"] = BATCH_SIZE;
+		_param_dim["sum_k"] = 1 * input_dim * input_dim;
+
+		_param_outnum["ks"] = BATCH_SIZE;
+		_param_dim["ks"] = 1 * output_dim * kernel_size * output_dim
+				* kernel_size;
+
+		if (GPU_MODE) {
+			_param_outnum["sum_pad_k"] = BATCH_SIZE;
+			_param_dim["sum_pad_k"] = 1 * (input_dim+2*pad) * (input_dim+2*pad);
+		}
+
+		if (train == phrase) {
+
+			_param_outnum["df"] = BATCH_SIZE;
+			_param_dim["df"] = output_channel * input_dim * input_dim;
+
+		}
 
 		////////////////////////////////////////
 
@@ -289,18 +300,10 @@ public:
 
 	~bin_activation_layer() {
 
-		delete sum_k;
-		delete ks;
-		delete df;
-		delete sum_pad_k;
 	}
 
 private:
 
-	blob *sum_k = NULL;
-	blob *ks = NULL;
-	blob *df = NULL;
-	blob *sum_pad_k = NULL;
 };
 
 }
