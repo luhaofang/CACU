@@ -242,7 +242,7 @@ network* alexnet_xnor(type phrase = train) {
 
 	batch_normalization_layer *bn_fc = new batch_normalization_layer("bn_fc", 1, //input_dim
 			4096, phrase);   //channel
-	bn_fc->bottoms << bc_fc1->tops[0];
+	bn_fc->bottoms << bc_fc2->tops[0];
 	bn_fc->set_params_init_value("scale", constant, 1.0);
 	bn_fc->set_params_init_value("shift", constant, 0.0);
 	net << bn_fc;
