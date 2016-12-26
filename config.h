@@ -27,9 +27,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#define LEARN_RATE   0.001
+#define LEARN_RATE   0.01
 
-#define BATCH_SIZE   32
+#define BATCH_SIZE   128
 
 #define WEIGHT_DECAY 0.0001
 

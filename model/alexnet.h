@@ -4,7 +4,7 @@
 using namespace mycnn;
 using namespace boost;
 
-network* alexnet_xnor(type phrase = train) {
+network* alexnet(type phrase = train) {
 
 	//num,channel,dim
 	blob *input_data = new blob(BATCH_SIZE, 3, 227, phrase);
@@ -48,216 +48,167 @@ network* alexnet_xnor(type phrase = train) {
 	mp1->bottoms << relu1->tops[0];
 	net << mp1;
 
-	batch_normalization_layer *bn_1a = new batch_normalization_layer("bn_1a",
-			28,    //input_dim
-			96, phrase);   //channel
-	bn_1a->bottoms << mp1->tops[0];
-	bn_1a->set_params_init_value("scale", constant, 1.0);
-	bn_1a->set_params_init_value("shift", constant, 0.0);
-	net << bn_1a;
-
-	bin_activation_layer *ba_1a = new bin_activation_layer("ba_1a", 28, //input_dim
-			96,	   //channel
-			5,	   //kernel_size
-			1,	   //stride
-			2, phrase);	   //pad
-	ba_1a->bottoms << bn_1a->tops[0];
-	net << ba_1a;
-
-	bin_conv_layer *bc_1a = new bin_conv_layer("bc_1a", 28,    //input_dim
+	conv_layer *bc_1a = new conv_layer("bc_1a", 28,    //input_dim
 			96,	   //channel
 			256,   //output_channel
 			5,	   //kernel_size
 			1,	   //stride
 			2, phrase);	   //pad
-	bc_1a->bin_bottoms << ba_1a->bin_tops[0];	//for signed(I)
-	bc_1a->bottoms << ba_1a->tops[0];	//for K
-	bc_1a->bottoms << ba_1a->bottoms[0];	//for real data
-	bc_1a->set_params_init_value("real_w", msra);
+	bc_1a->bottoms << mp1->tops[0];
+	bc_1a->set_params_init_value("w", msra);
 	net << bc_1a;
+
+	batch_normalization_layer *bn_1a = new batch_normalization_layer("bn_1a",
+			28,    //input_dim
+			256, phrase);   //channel
+	bn_1a->bottoms << bc_1a->tops[0];
+	bn_1a->set_params_init_value("scale", constant, 1.0);
+	bn_1a->set_params_init_value("shift", constant, 0.0);
+	net << bn_1a;
+
+	relu_layer *relu2 = new relu_layer("relu2", 28, 256, phrase);
+	relu2->bottoms << bn_1a->tops[0];
+	relu2->tops << bn_1a->tops[0];
+	//relu1->slope = 0.01;
+	net << relu2;
 
 	max_pooling_layer *mp2 = new max_pooling_layer("pool2", 28,  //input_dim
 			256,   //channel
 			3,	  //kernel_size
 			2, phrase);	  //stride
-	mp2->bottoms << bc_1a->tops[0];
+	mp2->bottoms << relu2->tops[0];
 	net << mp2;
+
+	conv_layer *bc_1b = new conv_layer("bc_1b", 14,    //input_dim
+			256,	   //channel
+			384,   //output_channel
+			3,	   //kernel_size
+			1,	   //stride
+			1, phrase);	   //pad
+	bc_1b->bottoms << mp2->tops[0];	//for K
+	bc_1b->set_params_init_value("w", msra);
+	net << bc_1b;
 
 	batch_normalization_layer *bn_1b = new batch_normalization_layer("bn_1b",
 			14,    //input_dim
-			256, phrase);   //channel
-	bn_1b->bottoms << mp2->tops[0];
+			384, phrase);   //channel
+	bn_1b->bottoms << bc_1b->tops[0];
 	bn_1b->set_params_init_value("scale", constant, 1.0);
 	bn_1b->set_params_init_value("shift", constant, 0.0);
 	net << bn_1b;
 
-	bin_activation_layer *ba_1b = new bin_activation_layer("ba_1b", 14, //input_dim
-			256,	   //channel
-			3,	   //kernel_size
-			1,	   //stride
-			1, phrase);	   //pad
-	ba_1b->bottoms << bn_1b->tops[0];
-	net << ba_1b;
+	relu_layer *relu3 = new relu_layer("relu3",14, 384, phrase);
+	relu3->bottoms << bn_1b->tops[0];
+	relu3->tops << bn_1b->tops[0];
+	//relu1->slope = 0.01;
+	net << relu3;
 
-	bin_conv_layer *bc_1b = new bin_conv_layer("bc_1b", 14,    //input_dim
-			256,	   //channel
+	conv_layer *bc_1c = new conv_layer("bc_1c", 14,    //input_dim
+			384,	   //channel
 			384,   //output_channel
 			3,	   //kernel_size
 			1,	   //stride
 			1, phrase);	   //pad
-	bc_1b->bin_bottoms << ba_1b->bin_tops[0];	//for signed(I)
-	bc_1b->bottoms << ba_1b->tops[0];	//for K
-	bc_1b->bottoms << ba_1b->bottoms[0];	//for real data
-	bc_1b->set_params_init_value("real_w", msra);
-	net << bc_1b;
+	bc_1c->bottoms << relu3->tops[0];	//for K
+	bc_1c->set_params_init_value("w", msra);
+	net << bc_1c;
 
 	batch_normalization_layer *bn_1c = new batch_normalization_layer("bn_1c",
 			14,    //input_dim
 			384, phrase);   //channel
-	bn_1c->bottoms << bc_1b->tops[0];
+	bn_1c->bottoms << bc_1c->tops[0];
 	bn_1c->set_params_init_value("scale", constant, 1.0);
 	bn_1c->set_params_init_value("shift", constant, 0.0);
 	net << bn_1c;
 
-	bin_activation_layer *ba_1c = new bin_activation_layer("ba_1c", 14, //input_dim
-			384,	   //channel
-			3,	   //kernel_size
-			1,	   //stride
-			1, phrase);	   //pad
-	ba_1c->bottoms << bn_1c->tops[0];
-	net << ba_1c;
+	relu_layer *relu4 = new relu_layer("relu4",14, 384, phrase);
+	relu4->bottoms << bn_1c->tops[0];
+	relu4->tops << bn_1c->tops[0];
+	//relu1->slope = 0.01;
+	net << relu4;
 
-	bin_conv_layer *bc_1c = new bin_conv_layer("bc_1c", 14,    //input_dim
-			384,	   //channel
-			384,   //output_channel
-			3,	   //kernel_size
-			1,	   //stride
-			1, phrase);	   //pad
-	bc_1c->bin_bottoms << ba_1c->bin_tops[0];	//for signed(I)
-	bc_1c->bottoms << ba_1c->tops[0];	//for K
-	bc_1c->bottoms << ba_1c->bottoms[0];	//for real data
-	bc_1c->set_params_init_value("real_w", msra);
-	net << bc_1c;
-
-	batch_normalization_layer *bn_1d = new batch_normalization_layer("bn_1d",
-			14,    //input_dim
-			384, phrase);   //channel
-	bn_1d->bottoms << bc_1c->tops[0];
-	bn_1d->set_params_init_value("scale", constant, 1.0);
-	bn_1d->set_params_init_value("shift", constant, 0.0);
-	net << bn_1d;
-
-	bin_activation_layer *ba_1d = new bin_activation_layer("ba_1d", 14, //input_dim
-			384,	   //channel
-			3,	   //kernel_size
-			1,	   //stride
-			1, phrase);	   //pad
-	ba_1d->bottoms << bn_1d->tops[0];
-	net << ba_1d;
-
-	bin_conv_layer *bc_1d = new bin_conv_layer("bc_1d", 14,    //input_dim
+	conv_layer *bc_1d = new conv_layer("bc_1d", 14,    //input_dim
 			384,	   //channel
 			256,   //output_channel
 			3,	   //kernel_size
 			1,	   //stride
 			1, phrase);	   //pad
-	bc_1d->bin_bottoms << ba_1d->bin_tops[0];	//for signed(I)
-	bc_1d->bottoms << ba_1d->tops[0];	//for K
-	bc_1d->bottoms << ba_1d->bottoms[0];	//for real data
-	bc_1d->set_params_init_value("real_w", msra);
+	bc_1d->bottoms << relu4->tops[0];	//for K
+	bc_1d->set_params_init_value("w", msra);
 	net << bc_1d;
+
+	batch_normalization_layer *bn_1d = new batch_normalization_layer("bn_1d",
+			14,    //input_dim
+			256, phrase);   //channel
+	bn_1d->bottoms << bc_1d->tops[0];
+	bn_1d->set_params_init_value("scale", constant, 1.0);
+	bn_1d->set_params_init_value("shift", constant, 0.0);
+	net << bn_1d;
+
+	relu_layer *relu5 = new relu_layer("relu5",14, 384, phrase);
+	relu5->bottoms << bn_1d->tops[0];
+	relu5->tops << bn_1d->tops[0];
+	//relu1->slope = 0.01;
+	net << relu5;
 
 	max_pooling_layer *mp3 = new max_pooling_layer("pool3", 14,  //input_dim
 			256,   //channel
 			3,	  //kernel_size
 			2, phrase);	  //stride
-	mp3->bottoms << bc_1d->tops[0];
+	mp3->bottoms << relu5->tops[0];
 	net << mp3;
 
+	inner_product_layer *ip1 = new inner_product_layer("ip1", 7,    //input_dim
+			256,   //channel
+			4096, //output_channel
+			phrase);
+	ip1->bottoms << mp3->tops[0];
+	ip1->set_params_init_value("w", msra);
+	ip1->set_params_init_value("bias", constant);
+	net << ip1;
+
 	batch_normalization_layer *bn_fc1 = new batch_normalization_layer("bn_fc1",
-			7,    //input_dim
-			256, phrase);   //channel
-	bn_fc1->bottoms << mp3->tops[0];
+			1,    //input_dim
+			4096, phrase);   //channel
+	bn_fc1->bottoms << ip1->tops[0];
 	bn_fc1->set_params_init_value("scale", constant, 1.0);
 	bn_fc1->set_params_init_value("shift", constant, 0.0);
 	net << bn_fc1;
 
-	bin_activation_layer *ba_fc1 = new bin_activation_layer("ba_fc1", 7, //input_dim
-			256,	   //channel
-			7,	   //kernel_size
-			1,	   //stride
-			0, phrase);	   //pad
-	ba_fc1->bottoms << bn_fc1->tops[0];
-	net << ba_fc1;
+	relu_layer *relu6 = new relu_layer("relu6",1, 4096, phrase);
+	relu6->bottoms << bn_fc1->tops[0];
+	relu6->tops << bn_fc1->tops[0];
+	//relu1->slope = 0.01;
+	net << relu6;
 
-	bin_conv_layer *bc_fc1 = new bin_conv_layer("bc_fc1", 7,    //input_dim
-			256,	   //channel
-			4096,   //output_channel
-			7,	   //kernel_size
-			1,	   //stride
-			0, phrase);	   //pad
-	bc_fc1->bin_bottoms << ba_fc1->bin_tops[0];	//for signed(I)
-	bc_fc1->bottoms << ba_fc1->tops[0];	//for K
-	bc_fc1->bottoms << ba_fc1->bottoms[0];	//for real data
-	bc_fc1->set_params_init_value("real_w", msra);
-	net << bc_fc1;
+	inner_product_layer *ip2 = new inner_product_layer("ip2", 1,    //input_dim
+			4096,   //channel
+			4096, //output_channel
+			phrase);
+	ip2->bottoms << relu6->tops[0];
+	ip2->set_params_init_value("w", msra);
+	ip2->set_params_init_value("bias", constant);
+	net << ip2;
 
 	batch_normalization_layer *bn_fc2 = new batch_normalization_layer("bn_fc2",
 			1,    //input_dim
 			4096, phrase);   //channel
-	bn_fc2->bottoms << bc_fc1->tops[0];
+	bn_fc2->bottoms << ip2->tops[0];
 	bn_fc2->set_params_init_value("scale", constant, 1.0);
 	bn_fc2->set_params_init_value("shift", constant, 0.0);
 	net << bn_fc2;
 
-	bin_activation_layer *ba_fc2 = new bin_activation_layer("ba_fc2", 1, //input_dim
-			4096,	   //channel
-			1,	   //kernel_size
-			1,	   //stride
-			0, phrase);	   //pad
-	ba_fc2->bottoms << bn_fc2->tops[0];
-	net << ba_fc2;
-
-	bin_conv_layer *bc_fc2 = new bin_conv_layer("bc_fc2", 1,    //input_dim
-			4096,	   //channel
-			4096,   //output_channel
-			1,	   //kernel_size
-			1,	   //stride
-			0, phrase);	   //pad
-	bc_fc2->bin_bottoms << ba_fc2->bin_tops[0];	//for signed(I)
-	bc_fc2->bottoms << ba_fc2->tops[0];	//for K
-	bc_fc2->bottoms << ba_fc2->bottoms[0];	//for real data
-	bc_fc2->set_params_init_value("real_w", msra);
-	net << bc_fc2;
-
-//	inner_product_layer *ip1 = new inner_product_layer("ip1", 7,    //input_dim
-//			256,   //channel
-//			1000, //output_channel
-//			phrase);
-//	ip1->bottoms << mp2->tops[0];
-//	ip1->set_params_init_value("w", msra);
-//	ip1->set_params_init_value("bias", constant);
-//	net << ip1;
-//
-
-	batch_normalization_layer *bn_fc = new batch_normalization_layer("bn_fc", 1, //input_dim
-			4096, phrase);   //channel
-	bn_fc->bottoms << bc_fc2->tops[0];
-	bn_fc->set_params_init_value("scale", constant, 1.0);
-	bn_fc->set_params_init_value("shift", constant, 0.0);
-	net << bn_fc;
-
-	relu_layer *relu2 = new relu_layer("relu2", 1, 4096, phrase);
-	relu2->bottoms << bn_fc->tops[0];
-	relu2->tops << bn_fc->tops[0];
+	relu_layer *relu7 = new relu_layer("relu7",1, 4096, phrase);
+	relu7->bottoms << bn_fc2->tops[0];
+	relu7->tops << bn_fc2->tops[0];
 	//relu1->slope = 0.01;
-	net << relu2;
+	net << relu7;
 
 	inner_product_layer *ip = new inner_product_layer("ip", 1,    //input_dim
 			4096,   //channel
 			1000, //output_channel
 			phrase);
-	ip->bottoms << relu2->tops[0];
+	ip->bottoms << relu7->tops[0];
 	ip->set_params_init_value("w", msra);
 	ip->set_params_init_value("bias", constant);
 	net << ip;

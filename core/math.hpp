@@ -204,9 +204,9 @@ extern "C" void CACU_DE_ACTIVATION_SIGMOID_GPU(float_t **&data, int num,
 extern "C" void CACU_SOFTMAX_GPU(float_t **&data, int num, int length,
 		float_t **&out_data);
 
-extern "C" void CACU_GEMM_GPU(float_t **&data, float_t **&bias, int num,
-		int kernels_num, int length, float_t **&kernels,
-		float_t **&out_data);
+extern "C" void CACU_GEMM_GPU(float_t *&data, float_t *&bias, int num,
+		int kernels_num, int length, float_t *&kernels,
+		float_t *&out_data);
 
 extern "C" void CACU_AXBY_GPU(float_t **&data, float_t a, int num, int length,
 		float_t **&bias, float_t b, float_t **&out_data);

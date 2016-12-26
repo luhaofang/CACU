@@ -35,8 +35,8 @@ using namespace std;
 
 #define CHECK(res) if(res!=cudaSuccess){exit(-1);}
 
-#define BLOCKNUM 512
-#define THREADNUM 512
+#define BLOCKNUM 1024*64
+#define THREADNUM 128
 
 __global__ void _k_CACU_SUM_SIZE_GPU(float_t **data, int num, int sum_size,
 		int length, int out_length, float_t **out_data) {
@@ -950,8 +950,6 @@ __global__ void _k_CACU_SCALE_SUM_ROW_GPU(float_t *data, int num,
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
 
-	int threadid = bid * THREADNUM + tid;
-
 	int start_in;
 
 	int data_row, data_col;
@@ -960,21 +958,35 @@ __global__ void _k_CACU_SCALE_SUM_ROW_GPU(float_t *data, int num,
 
 	int indata_length = (out_length / kernels_num) * sum_size;
 
-	for (int i = threadid; i < num * out_length; i += BLOCKNUM * THREADNUM) {
+	__shared__ float_t share_data[THREADNUM];
+
+	for (int i = bid; i < num * out_length; i += BLOCKNUM) {
 		data_row = i / out_length;
 		data_col = i % out_length;
-
-		out_data[i] = 0.0;
 
 		start_in = (data_col / kernels_num) * sum_size;
 
 		c = data_col % kernels_num;
 
-		for (int j = 0; j < sum_size; j++) {
-			out_data[i] += data[data_row * indata_length + start_in + j]
+		share_data[tid] = 0.0;
+
+		for (int j = tid; j < sum_size; j += THREADNUM) {
+			share_data[tid] += data[data_row * indata_length + start_in + j]
 					* kernel[c * sum_size + j];
 		}
-		out_data[i] += bias[c];
+
+		__syncthreads();
+
+		int flag = THREADNUM / 2;
+		while (flag > 0) {
+
+			if (tid < flag)
+				share_data[tid] += share_data[tid + flag];
+			__syncthreads();
+
+			flag = flag / 2;
+		}
+		out_data[i] = share_data[0] + bias[c];
 	}
 }
 
@@ -1062,8 +1074,9 @@ __global__ void _k_CACU_DECONV_W_B_GPU(float_t *data, float_t *top_diff,
 	int data_length = output_dim * output_dim * kernel_length;
 	int diff_length = dim * kernels_num;
 
-	for (int i = threadid; i < kernels_num * kernel_length;
-			i += BLOCKNUM * THREADNUM) {
+//	__shared__ float_t share_data[]
+
+	for (int i = threadid; i < kernels_num * kernel_length; i += BLOCKNUM*THREADNUM) {
 
 		data_row = i / kernel_length;
 		data_col = i % kernel_length;
@@ -1484,35 +1497,42 @@ extern "C" void CACU_SOFTMAX_GPU(float_t **&data, int num, int length,
 	cudaThreadSynchronize();
 }
 
-__global__ void _k_CACU_GEMM_GPU(float_t **data, float_t **kernel,
-		float_t **bias, int num, int kernels_num, int length,
-		float_t **out_data) {
+__global__ void _k_CACU_GEMM_GPU(float_t *data, float_t *kernel, float_t *bias,
+		int num, int kernels_num, int length, float_t *out_data) {
 
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
 
-	int threadid = bid * THREADNUM + tid;
-
 	int data_row, data_col;
 
-	for (int i = threadid; i < num * kernels_num; i += BLOCKNUM * THREADNUM) {
+	__shared__ float_t share_data[THREADNUM];
+
+	for (int i = bid; i < num * kernels_num; i += BLOCKNUM) {
 		data_row = i / kernels_num;
 		data_col = i % kernels_num;
 
-		out_data[data_row][data_col] = 0.0;
+		share_data[tid] = 0.0;
 
-		for (int j = 0; j < length; j++) {
-			out_data[data_row][data_col] = out_data[data_row][data_col]
-					+ data[data_row][j] * kernel[data_col][j];
+		for (int j = tid; j < length; j += THREADNUM) {
+			share_data[tid] += data[data_row * length + j]
+					* kernel[data_col * length + j];
 		}
-		out_data[data_row][data_col] = out_data[data_row][data_col]
-				+ bias[data_col][0];
+
+		int flag = THREADNUM / 2;
+		while (flag > 0) {
+			if (tid < flag)
+				share_data[tid] += share_data[tid + flag];
+			__syncthreads();
+
+			flag = flag / 2;
+		}
+		out_data[i] = share_data[0] + bias[data_col];
 	}
 }
 
 //caculate the sum(a*x_0i+b)
-extern "C" void CACU_GEMM_GPU(float_t **&data, float_t **&bias, int num,
-		int kernels_num, int length, float_t **&kernels, float_t **&out_data) {
+extern "C" void CACU_GEMM_GPU(float_t *&data, float_t *&bias, int num,
+		int kernels_num, int length, float_t *&kernels, float_t *&out_data) {
 
 	_k_CACU_GEMM_GPU<<<BLOCKNUM, THREADNUM, 0>>>(data, kernels, bias, num,
 			kernels_num, length, out_data);

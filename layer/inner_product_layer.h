@@ -56,16 +56,19 @@ public:
 
 	virtual const void forward() override
 	{
-		CACU_GEMM_GPU(bottoms[0]->data, params->data["bias"],bottoms[0]->num, output_channel,
-				input_dim*input_dim*channel, params->data["w"], tops[0]->data);
+
+		CACU_GEMM_GPU(bottoms[0]->s_data, params->s_data["bias"],bottoms[0]->num, output_channel,
+				input_dim*input_dim*channel, params->s_data["w"], tops[0]->s_data);
+
 	}
 
 	virtual const void backward(layer_param *&v) override
 	{
 		//gradiant for w
-
+		clock_t start = clock();
 		CACU_DE_GEMM_W_GPU(tops[0]->diff,tops[0]->num, output_channel, input_dim*input_dim*channel,bottoms[0]->data, v->data["w"]);
-
+		clock_t end = clock();
+		//printf("%s: %d\n",layer_name.c_str(), end-start);
 		CACU_SUM_GPU_R(v->data["bias"], tops[0]->diff,tops[0]->num, output_channel, v->data["bias"]);
 
 		//diff for prev layer
@@ -113,7 +116,6 @@ public:
 		}
 
 		assert(_sdata == layer_name);
-
 
 		vec_t _data(output_channel*channel*input_dim*input_dim);
 

@@ -55,6 +55,10 @@ public:
 	virtual const void forward() override
 	{
 
+//		CACU_RESET_DATA_GPU(mean->data,1,channel);
+//		CACU_RESET_DATA_GPU(storage_data->data["_var"],1,channel);
+//		CACU_RESET_DATA_GPU(std->data,1,channel);
+
 		float_t m = (float_t)BATCH_SIZE*input_dim*input_dim;
 		float_t bias_correction_factor = m > (float_t)1.0 ? (m) / (m - (float_t)1.0) : (float_t)1.0;
 

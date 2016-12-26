@@ -34,8 +34,8 @@ using namespace std;
 
 #define CHECK(res) if(res!=cudaSuccess){exit(-1);}
 
-#define BLOCKNUM 512
-#define THREADNUM 512
+#define BLOCKNUM 1024
+#define THREADNUM 64
 
 __global__ void _k_copy_padding_data_blob_gpu(float_t *data_input,
 		float_t *data_output, int num, int input_dim, int channel, int pad) {
@@ -139,7 +139,7 @@ __global__ void _k_copy_unpadding_data_gpu(float_t *data_input,
 
 	int output_dim = input_dim + 2 * pad;
 
-	int indata_length = output_dim*output_dim*channel;
+	int indata_length = output_dim * output_dim * channel;
 
 	int in_start, row, col;
 
@@ -257,39 +257,51 @@ __global__ void _k_img2col_gpu(float_t *data_input, float_t *data_output,
 	int tid = threadIdx.x;
 	int bid = blockIdx.x;
 
-	int threadid = bid * THREADNUM + tid;
-
 	int border = input_dim - output_dim;
 
-	int out_start, in_start, in, out;
+	int out_start, in_start, in;
 
 	int data_row, data_col;
 
-	int indata_length = input_dim * input_dim * channel;
-	int outdata_length = output_length * block_size * channel;
+	int k_row, k_col, c;
 
-	for (int j = threadid; j < num * output_length; j += BLOCKNUM * THREADNUM) {
+	int indata_length = input_dim * input_dim * channel;
+	int outdata_length = output_length * block_size;
+
+	for (int j = bid; j < num * output_length; j += BLOCKNUM) {
 		data_row = j / output_length;
 		data_col = j % output_length;
-		out_start = data_col * (block_size * channel);
+		out_start = data_col * (block_size);
 		in_start = (data_col + (data_col / output_dim) * border) * channel;
-		for (int c = 0; c < channel; c++) {
-			for (int ki = 0; ki < kernel_size; ki++) {
-				for (int kj = 0; kj < kernel_size; kj++) {
-					in = in_start + (ki * input_dim + kj) * channel + c;
-					out = out_start + c * block_size + ki * kernel_size + kj;
-					data_output[data_row * outdata_length + out] =
-							data_input[data_row * indata_length + in];
-				}
-			}
+
+		for (int i = tid; i < block_size; i += THREADNUM)
+		{
+			k_row = (i % (kernel_size * kernel_size)) / kernel_size;
+			k_col = i % kernel_size;
+			c = i / (kernel_size * kernel_size);
+			in = in_start + (k_row * input_dim + k_col) * channel + c;
+			data_output[data_row * outdata_length + out_start + i] =
+					data_input[data_row * indata_length + in];
 		}
+
+		__syncthreads();
+//		for (int c = 0; c < channel; c++) {
+//			for (int ki = 0; ki < kernel_size; ki++) {
+//				for (int kj = 0; kj < kernel_size; kj++) {
+//					in = in_start + (ki * input_dim + kj) * channel + c;
+//					out = out_start + c * block_size + ki * kernel_size + kj;
+//					data_output[data_row * outdata_length + out] =
+//							data_input[data_row * indata_length + in];
+//				}
+//			}
+//		}
 	}
 }
 
 extern "C" void img2col_gpu(float_t *&data, int num, int channel, int input_dim,
 		int kernel_size, int stride, int output_dim, float_t *&pad_input) {
 
-	int block_size = kernel_size * kernel_size;
+	int block_size = kernel_size * kernel_size * channel;
 	int output_length = output_dim * output_dim;
 
 	_k_img2col_gpu<<<BLOCKNUM, THREADNUM, 0>>>(data, pad_input, num, block_size,
@@ -320,7 +332,7 @@ __global__ void _k_col2img_gpu(float_t *data, int num, int channel,
 
 	int block_size = kernel_size * kernel_size * channel;
 
-	int indata_length = output_dim*output_dim*block_size;
+	int indata_length = output_dim * output_dim * block_size;
 
 	int c;
 
@@ -367,15 +379,15 @@ __global__ void _k_col2img_gpu(float_t *data, int num, int channel,
 						+ c * kernel_size * kernel_size;
 				outset_index = (outset_i * output_dim + outset_j) * block_size;
 
-				out_data[i] += data[data_row*indata_length + outset_index + k_index];
+				out_data[i] += data[data_row * indata_length + outset_index
+						+ k_index];
 
 			}
 	}
 }
 
-extern "C" void col2img_gpu(float_t *&data, int num, int channel,
-		int input_dim, int kernel_size, int stride, int output_dim,
-		float_t *&pad_input) {
+extern "C" void col2img_gpu(float_t *&data, int num, int channel, int input_dim,
+		int kernel_size, int stride, int output_dim, float_t *&pad_input) {
 
 	int length = input_dim * input_dim * channel;
 

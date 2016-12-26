@@ -56,6 +56,7 @@ using namespace cv;
 #include "../model/resnet18.h"
 #include "../model/resnet.h"
 #include "../model/alexnet.h"
+#include "../model/alexnet_xnor.h"
 
 using namespace mycnn;
 
@@ -364,7 +365,8 @@ void getdata(unsigned int count, unsigned int start, vector<vec_t> &data_blob,
 
 void train_test() {
 
-	network *net = alexnet_xnor();
+	network *net = alexnet();
+	//network *net = alexnet_xnor();
 	//network *net = resnet18();
 	//network *net = resnet18_xnor();
 	//net->load("/home/seal/dataset/experiment/cifar10/test_myquick_5000_xnor_leaky.model");

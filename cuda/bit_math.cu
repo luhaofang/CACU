@@ -34,8 +34,8 @@ using namespace std;
 
 #define CHECK(res) if(res!=cudaSuccess){exit(-1);}
 
-#define BLOCKNUM 512
-#define THREADNUM 512
+#define BLOCKNUM 1024
+#define THREADNUM 128
 
 __global__ void _k_BIT_CACU_SIGN_GPU(float_t **data_input,
 		unsigned int **data_output, int num, int length) {
