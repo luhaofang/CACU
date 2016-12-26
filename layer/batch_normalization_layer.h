@@ -497,7 +497,7 @@ public:
 
 		copy_data(zeros, storage_data->data["smean"], 0);
 		copy_data(ones, storage_data->data["svar"], 0);
-		copy_data(ep,storage_data->data["_epsilon"], 0)
+		copy_data(ep, storage_data->data["_epsilon"], 0);
 	}
 
 	virtual const int caculate_data_space() override {

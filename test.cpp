@@ -32,8 +32,9 @@
 #include "mycnn.h"
 
 //#include "tools/cifar10.hpp"
-#include "tools/imagenet.hpp"
+//#include "tools/imagenet.hpp"
 
+#include "tools/mnist.hpp"
 
 int main() {
 
