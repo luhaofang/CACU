@@ -59,5 +59,3 @@ Build a cnn network like what you did in Caffe.You may easily create a CNN mode 
 	arXiv preprint arXiv:1408.5093, 2014.
 
 
-#
-###Needs Collaborators~
