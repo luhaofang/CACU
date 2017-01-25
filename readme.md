@@ -1,6 +1,6 @@
 # Calculate deep convolution neurAl network on Cell Unit
 
-This is a deep learning framework for cnn which using xnor method to accelerate calculating convolution layer on cpu.
+This is a deep learning framework for cnn which using xnor method to accelerate calculating convolution layer on cpu. More details CACUE(https://github.com/luhaofang/CACUE).
 
 # Features:
 
